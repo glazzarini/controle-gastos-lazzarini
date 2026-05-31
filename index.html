@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f1117">
+<title>Gastos · Lazzarini</title>
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0f1117;
+  --surface:  #181c27;
+  --surface2: #1e2436;
+  --border:   #2a3148;
+  --accent:   #4f8ef7;
+  --accent2:  #7c3aed;
+  --green:    #22c55e;
+  --amber:    #f59e0b;
+  --red:      #ef4444;
+  --text:     #e8eaf0;
+  --muted:    #8892a4;
+  --card-r:   16px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;font-size:16px}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-weight:400;
+  min-height:100%;
+  display:flex;
+  flex-direction:column;
+  overscroll-behavior:none;
+}
+
+/* ── TOPBAR ───────────────────────────────────────────────────────────────── */
+.topbar{
+  position:sticky;top:0;z-index:100;
+  background:var(--bg);
+  padding:calc(var(--safe-top) + 12px) 20px 12px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.topbar-title{font-size:17px;font-weight:600;letter-spacing:-.3px}
+.topbar-sub{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+.month-badge{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:5px 10px;
+  font-size:12px;
+  font-family:'DM Mono',monospace;
+  color:var(--accent);
+  cursor:pointer;
+  display:flex;align-items:center;gap:5px;
+}
+
+/* ── NAV ──────────────────────────────────────────────────────────────────── */
+.nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  display:flex;
+  padding-bottom:var(--safe-bot);
+}
+.nav-btn{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  gap:3px;padding:10px 0;
+  border:none;background:none;color:var(--muted);
+  font-family:'DM Sans',sans-serif;font-size:10px;font-weight:500;
+  cursor:pointer;transition:color .15s;
+}
+.nav-btn.active{color:var(--accent)}
+.nav-btn svg{width:22px;height:22px;stroke-width:1.8}
+
+/* ── CONTENT ─────────────────────────────────────────────────────────────── */
+.content{
+  flex:1;
+  padding:16px 16px calc(70px + var(--safe-bot));
+  max-width:480px;
+  margin:0 auto;
+  width:100%;
+}
+.screen{display:none}
+.screen.active{display:block}
+
+/* ── CARDS ───────────────────────────────────────────────────────────────── */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--card-r);
+  padding:16px;
+  margin-bottom:12px;
+}
+.card-title{
+  font-size:11px;font-weight:500;
+  color:var(--muted);text-transform:uppercase;letter-spacing:.06em;
+  margin-bottom:12px;
+}
+.metric-row{display:flex;gap:10px;margin-bottom:12px}
+.metric{
+  flex:1;background:var(--surface2);
+  border-radius:12px;padding:12px;
+  border:1px solid var(--border);
+}
+.metric-label{font-size:10px;color:var(--muted);margin-bottom:4px}
+.metric-value{font-size:20px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:-1px}
+.metric-value.green{color:var(--green)}
+.metric-value.red{color:var(--red)}
+.metric-value.amber{color:var(--amber)}
+.metric-sub{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* ── PROGRESS BARS ───────────────────────────────────────────────────────── */
+.cat-item{margin-bottom:14px}
+.cat-item:last-child{margin-bottom:0}
+.cat-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.cat-name{font-size:13px;font-weight:500}
+.cat-values{font-size:11px;font-family:'DM Mono',monospace;color:var(--muted)}
+.cat-values span{color:var(--text)}
+.progress-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.progress-fill.ok{background:var(--green)}
+.progress-fill.warn{background:var(--amber)}
+.progress-fill.over{background:var(--red)}
+.cat-status{font-size:10px;margin-top:3px;color:var(--muted)}
+
+/* ── FORM ────────────────────────────────────────────────────────────────── */
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--muted);margin-bottom:6px;display:block;font-weight:500}
+.form-input,.form-select{
+  width:100%;background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:12px 14px;
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:15px;
+  outline:none;
+  transition:border-color .15s;
+  -webkit-appearance:none;appearance:none;
+}
+.form-input:focus,.form-select:focus{border-color:var(--accent)}
+.form-input::placeholder{color:var(--muted)}
+.form-row{display:flex;gap:10px}
+.form-row .form-group{flex:1}
+
+.value-input-wrap{position:relative}
+.value-prefix{
+  position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:14px;pointer-events:none;
+}
+.value-input-wrap .form-input{padding-left:36px;font-size:18px;font-weight:600;font-family:'DM Mono',monospace}
+
+.btn-primary{
+  width:100%;padding:15px;
+  background:var(--accent);
+  color:#fff;border:none;border-radius:12px;
+  font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;
+  cursor:pointer;transition:opacity .15s,transform .1s;
+  margin-top:4px;
+}
+.btn-primary:active{transform:scale(.98);opacity:.9}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+
+/* ── LANCAMENTOS LIST ────────────────────────────────────────────────────── */
+.lanc-item{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 0;
+  border-bottom:1px solid var(--border);
+}
+.lanc-item:last-child{border-bottom:none}
+.lanc-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+.lanc-info{flex:1;min-width:0}
+.lanc-desc{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lanc-cat{font-size:11px;color:var(--muted);margin-top:1px}
+.lanc-right{text-align:right;flex-shrink:0}
+.lanc-value{font-size:14px;font-weight:600;font-family:'DM Mono',monospace;color:var(--red)}
+.lanc-date{font-size:11px;color:var(--muted);margin-top:1px}
+
+/* ── ORCAMENTO ───────────────────────────────────────────────────────────── */
+.orc-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid var(--border);
+}
+.orc-row:last-child{border-bottom:none}
+.orc-label{font-size:13px;color:var(--muted)}
+.orc-value{font-size:14px;font-weight:600;font-family:'DM Mono',monospace}
+.orc-row.total .orc-label{color:var(--text);font-weight:600}
+.orc-row.total .orc-value{font-size:16px}
+
+/* ── HISTORICO ───────────────────────────────────────────────────────────── */
+.hist-month{
+  background:var(--surface2);border-radius:12px;
+  padding:14px;margin-bottom:10px;
+  border:1px solid var(--border);
+}
+.hist-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.hist-label{font-size:14px;font-weight:600}
+.hist-total{font-size:16px;font-weight:700;font-family:'DM Mono',monospace}
+.hist-bar-wrap{height:4px;background:var(--surface);border-radius:2px;margin-bottom:10px;overflow:hidden}
+.hist-bar{height:100%;border-radius:2px;transition:width .4s}
+.hist-detail{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+.hist-sobra{font-weight:600}
+
+/* ── TOAST ───────────────────────────────────────────────────────────────── */
+.toast{
+  position:fixed;bottom:calc(70px + var(--safe-bot) + 12px);
+  left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:10px 18px;
+  font-size:13px;font-weight:500;
+  opacity:0;transition:all .25s;pointer-events:none;
+  white-space:nowrap;z-index:200;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:var(--green);color:var(--green)}
+.toast.error{border-color:var(--red);color:var(--red)}
+
+/* ── LOADING ─────────────────────────────────────────────────────────────── */
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px;gap:12px}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--muted)}
+
+/* ── EMPTY ───────────────────────────────────────────────────────────────── */
+.empty{text-align:center;padding:40px 20px;color:var(--muted)}
+.empty-icon{font-size:36px;margin-bottom:8px}
+.empty-text{font-size:14px}
+
+/* ── MONTH PICKER ────────────────────────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.7);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal-sheet{
+  background:var(--surface);
+  border-radius:20px 20px 0 0;
+  padding:20px 20px calc(20px + var(--safe-bot));
+  width:100%;max-width:480px;
+  transform:translateY(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+}
+.modal-overlay.open .modal-sheet{transform:translateY(0)}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:16px;text-align:center}
+.month-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.month-opt{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:10px;text-align:center;
+  font-size:13px;font-family:'DM Mono',monospace;cursor:pointer;
+  transition:all .15s;
+}
+.month-opt.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+/* ── SECTION HEADER ─────────────────────────────────────────────────────── */
+.section-header{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:10px;
+}
+.section-title{font-size:13px;font-weight:600;color:var(--text)}
+.section-count{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+
+/* ── DIVIDER ─────────────────────────────────────────────────────────────── */
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ── SUMMARY PILL ────────────────────────────────────────────────────────── */
+.summary-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;padding:4px 10px;font-size:11px;
+  font-family:'DM Mono',monospace;
+}
+.summary-pill.green{border-color:var(--green);color:var(--green);background:rgba(34,197,94,.08)}
+.summary-pill.red{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.08)}
+.summary-pill.amber{border-color:var(--amber);color:var(--amber);background:rgba(245,158,11,.08)}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div>
+    <div class="topbar-title">Lazzarini 💳</div>
+    <div class="topbar-sub">Controle de gastos</div>
+  </div>
+  <button class="month-badge" onclick="openMonthPicker()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    <span id="topbar-month">jun/26</span>
+  </button>
+</div>
+
+<!-- SCREENS -->
+<div class="content">
+
+  <!-- ── PAINEL ─────────────────────────────────────────────────────────── -->
+  <div class="screen active" id="screen-painel">
+    <div id="painel-content">
+      <div class="loading"><div class="spinner"></div><div class="loading-text">Carregando...</div></div>
+    </div>
+  </div>
+
+  <!-- ── LANÇAR ─────────────────────────────────────────────────────────── -->
+  <div class="screen" id="screen-lancar">
+    <div class="card">
+      <div class="card-title">Novo lançamento</div>
+
+      <div class="form-group">
+        <label class="form-label">Valor</label>
+        <div class="value-input-wrap">
+          <span class="value-prefix">R$</span>
+          <input class="form-input" id="f-valor" type="number" inputmode="decimal" placeholder="0,00" step="0.01" min="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Categoria</label>
+        <select class="form-select" id="f-categoria">
+          <option value="">Selecione...</option>
+          <option>Alimentacao fora</option>
+          <option>Mercado / Supermercado</option>
+          <option>Farmacia / Saude</option>
+          <option>Veiculos / Transporte</option>
+          <option>Viagem / Lazer</option>
+          <option>Vestuario / Moda</option>
+          <option>Mercado Livre</option>
+          <option>Streaming / Assinaturas</option>
+          <option>Educacao / Infanto</option>
+          <option>Pet</option>
+          <option>iPhone parcelado</option>
+          <option>Outros / Diversos</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Descrição</label>
+        <input class="form-input" id="f-descricao" type="text" placeholder="Ex: Almoço no Outback">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Data</label>
+          <input class="form-input" id="f-data" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" id="f-tipo">
+            <option>A vista</option>
+            <option>Parcelado</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Estabelecimento <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+        <input class="form-input" id="f-estab" type="text" placeholder="Ex: McDonald's">
+      </div>
+
+      <button class="btn-primary" id="btn-salvar" onclick="salvarLancamento()">
+        Salvar lançamento
+      </button>
+    </div>
+  </div>
+
+  <!-- ── LANÇAMENTOS ────────────────────────────────────────────────────── -->
+  <div class="screen" id="screen-lancamentos">
+    <div id="lancamentos-content">
+      <div class="loading"><div class="spinner"></div><div class="loading-text">Carregando...</div></div>
+    </div>
+  </div>
+
+  <!-- ── ORÇAMENTO ──────────────────────────────────────────────────────── -->
+  <div class="screen" id="screen-orcamento">
+    <div id="orcamento-content">
+      <div class="loading"><div class="spinner"></div><div class="loading-text">Carregando...</div></div>
+    </div>
+  </div>
+
+  <!-- ── HISTÓRICO ──────────────────────────────────────────────────────── -->
+  <div class="screen" id="screen-historico">
+    <div id="historico-content">
+      <div class="loading"><div class="spinner"></div><div class="loading-text">Carregando...</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="goTo('painel',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    Painel
+  </button>
+  <button class="nav-btn" onclick="goTo('lancar',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+    Lançar
+  </button>
+  <button class="nav-btn" onclick="goTo('lancamentos',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+    Lançamentos
+  </button>
+  <button class="nav-btn" onclick="goTo('orcamento',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    Orçamento
+  </button>
+  <button class="nav-btn" onclick="goTo('historico',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-5"/></svg>
+    Histórico
+  </button>
+</nav>
+
+<!-- MONTH PICKER MODAL -->
+<div class="modal-overlay" id="month-modal" onclick="closeMonthPicker(event)">
+  <div class="modal-sheet">
+    <div class="modal-title">Selecionar mês</div>
+    <div class="month-grid" id="month-grid"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────────
+const SHEET_ID  = '19I5LZsCvctD0d5ug7WnwbuOhTSbB0hUNw373zSEuHcc';
+const API_KEY   = 'AIzaSyADPwsG67nQxNn010Js3ua3xC3MZ9vZttM';
+const BASE_URL  = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+const MONTHS = [
+  {label:'jun/26', date:new Date(2026,5,1)},
+  {label:'jul/26', date:new Date(2026,6,1)},
+  {label:'ago/26', date:new Date(2026,7,1)},
+  {label:'set/26', date:new Date(2026,8,1)},
+  {label:'out/26', date:new Date(2026,9,1)},
+  {label:'nov/26', date:new Date(2026,10,1)},
+  {label:'dez/26', date:new Date(2026,11,1)},
+  {label:'jan/27', date:new Date(2027,0,1)},
+  {label:'fev/27', date:new Date(2027,1,1)},
+  {label:'mar/27', date:new Date(2027,2,1)},
+  {label:'abr/27', date:new Date(2027,3,1)},
+  {label:'mai/27', date:new Date(2027,4,1)},
+  {label:'jun/27', date:new Date(2027,5,1)},
+];
+
+const TETOS = {
+  'Alimentacao fora':       3200,
+  'Mercado / Supermercado': 1800,
+  'Farmacia / Saude':       1400,
+  'Veiculos / Transporte':  1400,
+  'Viagem / Lazer':          600,
+  'Vestuario / Moda':        600,
+  'Mercado Livre':            600,
+  'Streaming / Assinaturas': 370,
+  'Educacao / Infanto':       480,
+  'Pet':                      450,
+  'iPhone parcelado':         275,
+  'Outros / Diversos':        825,
+};
+
+const CAT_ICONS = {
+  'Alimentacao fora':'🍽','Mercado / Supermercado':'🛒',
+  'Farmacia / Saude':'💊','Veiculos / Transporte':'🚗',
+  'Viagem / Lazer':'✈','Vestuario / Moda':'🛍',
+  'Mercado Livre':'📦','Streaming / Assinaturas':'📺',
+  'Educacao / Infanto':'📚','Pet':'🐾',
+  'iPhone parcelado':'📱','Outros / Diversos':'🎯',
+};
+
+let currentMonth = MONTHS[0];
+let allLancamentos = [];
+let config = {
+  renda_guilherme: 20000,
+  renda_esposa: 14000,
+  meta_fatura: 12000,
+  total_fixos: 14559,
+};
+
+// ── SHEETS API ─────────────────────────────────────────────────────────────
+async function sheetsGet(range) {
+  const url = `${BASE_URL}/values/${encodeURIComponent(range)}?key=${API_KEY}`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error('Erro ao ler planilha');
+  const d = await r.json();
+  return d.values || [];
+}
+
+async function sheetsAppend(range, values) {
+  const url = `${BASE_URL}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&key=${API_KEY}`;
+  const r = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ values })
+  });
+  if (!r.ok) {
+    const err = await r.json();
+    throw new Error(err.error?.message || 'Erro ao salvar');
+  }
+  return r.json();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+async function init() {
+  setTodayDate();
+  buildMonthGrid();
+  await loadData();
+  renderPainel();
+}
+
+function setTodayDate() {
+  const today = new Date();
+  document.getElementById('f-data').value = today.toISOString().split('T')[0];
+}
+
+async function loadData() {
+  try {
+    // Try to load config sheet
+    try {
+      const cfg = await sheetsGet('config!A:B');
+      cfg.forEach(([k,v]) => { if(k && v) config[k] = isNaN(v) ? v : Number(v); });
+    } catch(e) { /* use defaults */ }
+
+    // Load lancamentos
+    const rows = await sheetsGet('lancamentos!A:G');
+    allLancamentos = [];
+    for (let i = 1; i < rows.length; i++) {
+      const [data,descricao,categoria,valor,estabelecimento,tipo,obs] = rows[i];
+      if (!data || !valor) continue;
+      allLancamentos.push({
+        data: parseDate(data),
+        descricao: descricao || '',
+        categoria: categoria || '',
+        valor: parseFloat(String(valor).replace(',','.')),
+        estabelecimento: estabelecimento || '',
+        tipo: tipo || 'A vista',
+        obs: obs || '',
+        raw: data,
+      });
+    }
+    allLancamentos.sort((a,b) => b.data - a.data);
+  } catch(e) {
+    console.error(e);
+    // Use empty data if sheets not set up yet
+    allLancamentos = [];
+  }
+}
+
+function parseDate(str) {
+  if (!str) return new Date();
+  // Handles DD/MM/YYYY or YYYY-MM-DD
+  if (str.includes('/')) {
+    const [d,m,y] = str.split('/');
+    return new Date(y, m-1, d);
+  }
+  return new Date(str);
+}
+
+function formatDate(d) {
+  if (!d) return '';
+  const date = d instanceof Date ? d : new Date(d);
+  return date.toLocaleDateString('pt-BR');
+}
+
+function formatMoney(v) {
+  return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0);
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────
+function getLancamentosDoMes(month) {
+  return allLancamentos.filter(l => {
+    if (!l.data) return false;
+    return l.data.getMonth() === month.date.getMonth() &&
+           l.data.getFullYear() === month.date.getFullYear();
+  });
+}
+
+function getTotaisPorCategoria(lancamentos) {
+  const totais = {};
+  Object.keys(TETOS).forEach(k => totais[k] = 0);
+  lancamentos.forEach(l => {
+    if (totais[l.categoria] !== undefined) totais[l.categoria] += l.valor;
+    else if (l.categoria) totais[l.categoria] = (totais[l.categoria]||0) + l.valor;
+  });
+  return totais;
+}
+
+// ── RENDER PAINEL ─────────────────────────────────────────────────────────
+function renderPainel() {
+  const lancs = getLancamentosDoMes(currentMonth);
+  const totais = getTotaisPorCategoria(lancs);
+  const totalFatura = Object.values(totais).reduce((a,b)=>a+b,0);
+  const meta = config.meta_fatura || 12000;
+  const pctFatura = Math.min(totalFatura / meta, 1);
+  const diff = meta - totalFatura;
+
+  const pctClass = pctFatura < 0.75 ? 'green' : pctFatura < 1 ? 'amber' : 'red';
+  const diffClass = diff >= 0 ? 'green' : 'red';
+
+  let html = `
+    <div class="metric-row">
+      <div class="metric">
+        <div class="metric-label">Gasto no mês</div>
+        <div class="metric-value ${pctClass}">${formatMoney(totalFatura)}</div>
+        <div class="metric-sub">${(pctFatura*100).toFixed(0)}% da meta</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">${diff>=0?'Disponível':'Acima da meta'}</div>
+        <div class="metric-value ${diffClass}">${formatMoney(Math.abs(diff))}</div>
+        <div class="metric-sub">meta ${formatMoney(meta)}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Por categoria</div>`;
+
+  Object.entries(TETOS).forEach(([cat, teto]) => {
+    const gasto = totais[cat] || 0;
+    const pct = teto > 0 ? Math.min(gasto/teto, 1.2) : 0;
+    const pctShow = teto > 0 ? Math.min(gasto/teto*100, 100) : 0;
+    const cls = pct < 0.75 ? 'ok' : pct < 1 ? 'warn' : 'over';
+    const icon = CAT_ICONS[cat] || '💳';
+    html += `
+      <div class="cat-item">
+        <div class="cat-header">
+          <div class="cat-name">${icon} ${cat}</div>
+          <div class="cat-values"><span>${formatMoney(gasto)}</span> / ${formatMoney(teto)}</div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill ${cls}" style="width:${pctShow}%"></div>
+        </div>
+      </div>`;
+  });
+
+  html += `</div>`;
+
+  // Recent lancamentos
+  if (lancs.length > 0) {
+    html += `<div class="card">
+      <div class="section-header">
+        <div class="section-title">Últimos lançamentos</div>
+        <div class="section-count">${lancs.length} no mês</div>
+      </div>`;
+    lancs.slice(0,5).forEach(l => {
+      html += renderLancItem(l);
+    });
+    if (lancs.length > 5) {
+      html += `<div style="text-align:center;padding-top:10px">
+        <button onclick="goToFromBtn('lancamentos')" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">Ver todos (${lancs.length}) →</button>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+
+  document.getElementById('painel-content').innerHTML = html;
+}
+
+function renderLancItem(l) {
+  const icon = CAT_ICONS[l.categoria] || '💳';
+  return `<div class="lanc-item">
+    <div class="lanc-icon">${icon}</div>
+    <div class="lanc-info">
+      <div class="lanc-desc">${l.descricao || l.categoria}</div>
+      <div class="lanc-cat">${l.categoria}${l.estabelecimento ? ' · '+l.estabelecimento : ''}</div>
+    </div>
+    <div class="lanc-right">
+      <div class="lanc-value">-${formatMoney(l.valor)}</div>
+      <div class="lanc-date">${formatDate(l.data)}</div>
+    </div>
+  </div>`;
+}
+
+// ── RENDER LANCAMENTOS ────────────────────────────────────────────────────
+function renderLancamentos() {
+  const lancs = getLancamentosDoMes(currentMonth);
+  let html = '';
+
+  if (lancs.length === 0) {
+    html = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Nenhum lançamento em ${currentMonth.label}</div></div>`;
+  } else {
+    const total = lancs.reduce((a,l)=>a+l.valor,0);
+    html += `<div class="metric-row">
+      <div class="metric">
+        <div class="metric-label">Total lançado</div>
+        <div class="metric-value red">${formatMoney(total)}</div>
+        <div class="metric-sub">${lancs.length} lançamentos</div>
+      </div>
+    </div>
+    <div class="card">`;
+    lancs.forEach(l => { html += renderLancItem(l); });
+    html += `</div>`;
+  }
+
+  document.getElementById('lancamentos-content').innerHTML = html;
+}
+
+// ── RENDER ORCAMENTO ──────────────────────────────────────────────────────
+function renderOrcamento() {
+  const lancs = getLancamentosDoMes(currentMonth);
+  const totalFatura = lancs.reduce((a,l)=>a+l.valor,0);
+  const renda = (config.renda_guilherme||20000) + (config.renda_esposa||14000);
+  const fixos = config.total_fixos || 14559;
+  const sobra = renda - fixos - totalFatura;
+  const pctPoupanca = renda > 0 ? sobra/renda : 0;
+  const sobraClass = sobra >= 0 ? 'green' : 'red';
+  const pctClass = pctPoupanca >= 0.2 ? 'green' : pctPoupanca >= 0.1 ? 'amber' : 'red';
+
+  const html = `
+    <div class="metric-row">
+      <div class="metric">
+        <div class="metric-label">Sobra / Poupança</div>
+        <div class="metric-value ${sobraClass}">${formatMoney(sobra)}</div>
+        <div class="metric-sub">${(pctPoupanca*100).toFixed(1)}% da renda</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Meta poupança</div>
+        <div class="metric-value green">${formatMoney(renda*0.2)}</div>
+        <div class="metric-sub">20% da renda</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Renda</div>
+      <div class="orc-row">
+        <div class="orc-label">💼 Guilherme (PJ líquido)</div>
+        <div class="orc-value" style="color:var(--accent)">${formatMoney(config.renda_guilherme||20000)}</div>
+      </div>
+      <div class="orc-row">
+        <div class="orc-label">💼 Esposa (PJ líquido)</div>
+        <div class="orc-value" style="color:var(--accent)">${formatMoney(config.renda_esposa||14000)}</div>
+      </div>
+      <div class="orc-row total">
+        <div class="orc-label">Renda total</div>
+        <div class="orc-value">${formatMoney(renda)}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Contas fixas</div>
+      <div class="orc-row"><div class="orc-label">🏠 Financiamento imóvel</div><div class="orc-value">R$ 7.500</div></div>
+      <div class="orc-row"><div class="orc-label">🏫 Escola (filha)</div><div class="orc-value">R$ 2.300</div></div>
+      <div class="orc-row"><div class="orc-label">🏥 Convênio médico</div><div class="orc-value">R$ 2.000</div></div>
+      <div class="orc-row"><div class="orc-label">🏢 Condomínio</div><div class="orc-value">R$ 1.600</div></div>
+      <div class="orc-row"><div class="orc-label">🧠 Terapia</div><div class="orc-value">R$ 510</div></div>
+      <div class="orc-row"><div class="orc-label">📱 Claro</div><div class="orc-value">R$ 281</div></div>
+      <div class="orc-row"><div class="orc-label">📱 Vivo</div><div class="orc-value">R$ 124</div></div>
+      <div class="orc-row"><div class="orc-label">🚗 Seguro carro</div><div class="orc-value">R$ 244</div></div>
+      <div class="orc-row total">
+        <div class="orc-label">Total fixos</div>
+        <div class="orc-value">${formatMoney(fixos)}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Resultado ${currentMonth.label}</div>
+      <div class="orc-row"><div class="orc-label">💳 Fatura cartão</div><div class="orc-value" style="color:var(--red)">${formatMoney(totalFatura)}</div></div>
+      <div class="orc-row"><div class="orc-label">🎯 Meta fatura</div><div class="orc-value" style="color:var(--accent)">${formatMoney(config.meta_fatura||12000)}</div></div>
+      <div class="orc-row total">
+        <div class="orc-label">Sobra / Poupança</div>
+        <div class="orc-value ${sobraClass}">${formatMoney(sobra)}</div>
+      </div>
+      <div class="orc-row total">
+        <div class="orc-label">% Poupança</div>
+        <div class="orc-value ${pctClass}">${(pctPoupanca*100).toFixed(1)}%</div>
+      </div>
+    </div>`;
+
+  document.getElementById('orcamento-content').innerHTML = html;
+}
+
+// ── RENDER HISTORICO ──────────────────────────────────────────────────────
+function renderHistorico() {
+  const renda = (config.renda_guilherme||20000) + (config.renda_esposa||14000);
+  const fixos = config.total_fixos || 14559;
+  const meta = config.meta_fatura || 12000;
+
+  let html = '';
+  const monthsWithData = MONTHS.filter(m => {
+    const lancs = getLancamentosDoMes(m);
+    return lancs.length > 0 || m.label === currentMonth.label;
+  });
+
+  if (monthsWithData.length === 0) {
+    html = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Nenhum dado ainda. Comece lançando suas compras!</div></div>`;
+  } else {
+    monthsWithData.forEach(m => {
+      const lancs = getLancamentosDoMes(m);
+      const total = lancs.reduce((a,l)=>a+l.valor,0);
+      const sobra = renda - fixos - total;
+      const pct = meta > 0 ? Math.min(total/meta,1.2) : 0;
+      const barPct = Math.min(pct*100, 100);
+      const barClass = pct < 0.75 ? 'ok' : pct < 1 ? 'warn' : 'over';
+      const sobraClass = sobra >= 0 ? 'green' : 'red';
+      const isCurrent = m.label === currentMonth.label;
+
+      html += `<div class="hist-month" style="${isCurrent?'border-color:var(--accent)':''}">
+        <div class="hist-header">
+          <div class="hist-label">${m.label}${isCurrent?' <span style="font-size:10px;color:var(--accent);font-weight:400">atual</span>':''}</div>
+          <div class="hist-total" style="color:${pct>=1?'var(--red)':pct>=0.75?'var(--amber)':'var(--green)'}">${formatMoney(total)}</div>
+        </div>
+        <div class="hist-bar-wrap">
+          <div class="hist-bar" style="width:${barPct}%;background:${pct>=1?'var(--red)':pct>=0.75?'var(--amber)':'var(--green)'}"></div>
+        </div>
+        <div class="hist-detail">
+          <span>${lancs.length} lançamento${lancs.length!==1?'s':''} · meta ${formatMoney(meta)}</span>
+          <span class="hist-sobra" style="color:${sobra>=0?'var(--green)':'var(--red)'}">${sobra>=0?'+':''}${formatMoney(sobra)}</span>
+        </div>
+      </div>`;
+    });
+  }
+
+  document.getElementById('historico-content').innerHTML = html;
+}
+
+// ── SALVAR LANÇAMENTO ─────────────────────────────────────────────────────
+async function salvarLancamento() {
+  const valor     = parseFloat(document.getElementById('f-valor').value);
+  const categoria = document.getElementById('f-categoria').value;
+  const descricao = document.getElementById('f-descricao').value.trim();
+  const data      = document.getElementById('f-data').value;
+  const tipo      = document.getElementById('f-tipo').value;
+  const estab     = document.getElementById('f-estab').value.trim();
+
+  if (!valor || valor <= 0) { showToast('Informe um valor válido', 'error'); return; }
+  if (!categoria)           { showToast('Selecione uma categoria', 'error'); return; }
+  if (!data)                { showToast('Informe a data', 'error'); return; }
+
+  const btn = document.getElementById('btn-salvar');
+  btn.disabled = true;
+  btn.textContent = 'Salvando...';
+
+  try {
+    // Format date as DD/MM/YYYY
+    const [y,m,d] = data.split('-');
+    const dataFmt = `${d}/${m}/${y}`;
+
+    await sheetsAppend('lancamentos!A:G', [[dataFmt, descricao, categoria, valor, estab, tipo, '']]);
+
+    // Add to local state
+    allLancamentos.unshift({
+      data: new Date(parseInt(y), parseInt(m)-1, parseInt(d)),
+      descricao, categoria,
+      valor,
+      estabelecimento: estab,
+      tipo,
+      obs: '',
+      raw: dataFmt,
+    });
+
+    showToast('Lançamento salvo! ✓', 'success');
+
+    // Reset form
+    document.getElementById('f-valor').value = '';
+    document.getElementById('f-categoria').value = '';
+    document.getElementById('f-descricao').value = '';
+    document.getElementById('f-estab').value = '';
+    setTodayDate();
+
+    // Re-render other screens
+    renderPainel();
+
+  } catch(e) {
+    showToast('Erro ao salvar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Salvar lançamento';
+  }
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────
+function goTo(screen, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-'+screen).classList.add('active');
+  if(btn) btn.classList.add('active');
+
+  if (screen==='lancamentos') renderLancamentos();
+  if (screen==='orcamento')   renderOrcamento();
+  if (screen==='historico')   renderHistorico();
+  if (screen==='painel')      renderPainel();
+  window.scrollTo(0,0);
+}
+
+function goToFromBtn(screen) {
+  const btns = document.querySelectorAll('.nav-btn');
+  const map = {painel:0, lancar:1, lancamentos:2, orcamento:3, historico:4};
+  goTo(screen, btns[map[screen]]);
+}
+
+// ── MONTH PICKER ──────────────────────────────────────────────────────────
+function buildMonthGrid() {
+  const grid = document.getElementById('month-grid');
+  grid.innerHTML = MONTHS.map(m => `
+    <div class="month-opt ${m.label===currentMonth.label?'active':''}"
+         onclick="selectMonth('${m.label}')">${m.label}</div>
+  `).join('');
+}
+
+function openMonthPicker() {
+  document.getElementById('month-modal').classList.add('open');
+}
+
+function closeMonthPicker(e) {
+  if (e.target === document.getElementById('month-modal')) {
+    document.getElementById('month-modal').classList.remove('open');
+  }
+}
+
+function selectMonth(label) {
+  currentMonth = MONTHS.find(m => m.label === label);
+  document.getElementById('topbar-month').textContent = label;
+  document.getElementById('month-modal').classList.remove('open');
+  buildMonthGrid();
+  renderPainel();
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── PWA ───────────────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+// ── START ─────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
