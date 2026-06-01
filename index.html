@@ -535,7 +535,7 @@ body{
 // ── CONFIG ─────────────────────────────────────────────────────────────────
 const SHEET_ID  = '19I5LZsCvctD0d5ug7WnwbuOhTSbB0hUNw373zSEuHcc';
 const API_KEY   = 'AIzaSyADPwsG67nQxNn010Js3ua3xC3MZ9vZttM';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDcVC5cCUdjTisGta6ibgO-aB4sZKIFoU8FGM11SRy7bfMcM1hbgTS8ryup3Xqka-_/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzUxo2FUcyKEdpubGZRUe7YfVixe3s9maO847mf9YsIVPrxQ92owgYXK-5xpeW0tqAG/exec';
 const BASE_URL  = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
 
 // ── STATE ──────────────────────────────────────────────────────────────────
@@ -598,16 +598,31 @@ async function sheetsGet(range) {
 }
 
 async function scriptPost(payload) {
-  // Use no-cors to avoid CORS/redirect issues with Apps Script
-  await fetch(SCRIPT_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: {'Content-Type': 'text/plain'},
-    body: JSON.stringify(payload)
-  });
-  // no-cors means we can't read the response, but the request reaches the server
-  // Wait a tiny bit to ensure it processed
-  await new Promise(r => setTimeout(r, 300));
+  if (payload.action === 'delete') {
+    // Use GET with query params for delete — avoids CORS redirect issues
+    const params = new URLSearchParams({
+      action:          'delete',
+      data:            payload.data,
+      descricao:       payload.descricao || '',
+      categoria:       payload.categoria || '',
+      valor:           String(payload.valor),
+      estabelecimento: payload.estabelecimento || '',
+      tipo:            payload.tipo || '',
+    });
+    await fetch(`${SCRIPT_URL}?${params.toString()}`, {
+      method: 'GET',
+      mode: 'no-cors',
+    });
+  } else {
+    // POST no-cors for insert
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify(payload)
+    });
+  }
+  await new Promise(r => setTimeout(r, 400));
 }
 
 async function sheetsAppend(range, values) {
