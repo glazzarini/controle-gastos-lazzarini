@@ -265,6 +265,38 @@ body{
 }
 .month-opt.active{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
 
+/* ── DETAIL SCREEN ───────────────────────────────────────────────────────── */
+.back-btn{
+  display:flex;align-items:center;gap:8px;
+  background:none;border:none;color:var(--accent);
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;
+  cursor:pointer;padding:0;margin-bottom:16px;
+}
+.back-btn svg{width:18px;height:18px;stroke-width:2}
+.detail-header{margin-bottom:16px}
+.detail-month{font-size:22px;font-weight:700;margin-bottom:2px}
+.detail-sub{font-size:13px;color:var(--muted)}
+
+/* ── HIST EXPANDED ───────────────────────────────────────────────────────── */
+.hist-month{cursor:pointer;transition:border-color .15s}
+.hist-month:hover{border-color:var(--accent)}
+.hist-expanded{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+.hist-exp-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px}
+.hist-exp-label{color:var(--muted)}
+.hist-exp-value{font-family:'DM Mono',monospace;font-size:12px;font-weight:500}
+.hist-cats{margin-top:8px}
+.hist-cat-row{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-size:12px;border-bottom:1px solid var(--border)}
+.hist-cat-row:last-child{border-bottom:none}
+.hist-cat-name{color:var(--muted);display:flex;align-items:center;gap:5px}
+.hist-cat-val{font-family:'DM Mono',monospace;font-size:12px}
+.hist-status-badge{
+  display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;margin-top:6px;
+}
+.badge-ok{background:rgba(34,197,94,.15);color:var(--green)}
+.badge-warn{background:rgba(245,158,11,.15);color:var(--amber)}
+.badge-over{background:rgba(239,68,68,.15);color:var(--red)}
+.badge-empty{background:var(--surface2);color:var(--muted)}
+
 /* ── SECTION HEADER ─────────────────────────────────────────────────────── */
 .section-header{
   display:flex;justify-content:space-between;align-items:center;
@@ -393,6 +425,11 @@ body{
     <div id="historico-content">
       <div class="loading"><div class="spinner"></div><div class="loading-text">Carregando...</div></div>
     </div>
+  </div>
+
+  <!-- ── DETALHE MÊS ────────────────────────────────────────────────────── -->
+  <div class="screen" id="screen-detalhe">
+    <div id="detalhe-content"></div>
   </div>
 
 </div>
@@ -641,6 +678,7 @@ function renderPainel() {
     const pctShow = teto > 0 ? Math.min(gasto/teto*100, 100) : 0;
     const cls = pct < 0.75 ? 'ok' : pct < 1 ? 'warn' : 'over';
     const icon = CAT_ICONS[cat] || '💳';
+    const statusTxt = gasto===0 ? '' : pct>=1 ? '<span style="font-size:10px;color:var(--red)">🔴 Estourou</span>' : pct>=0.75 ? '<span style="font-size:10px;color:var(--amber)">🟡 Atenção</span>' : '<span style="font-size:10px;color:var(--green)">✅ OK</span>';
     html += `
       <div class="cat-item">
         <div class="cat-header">
@@ -650,6 +688,7 @@ function renderPainel() {
         <div class="progress-track">
           <div class="progress-fill ${cls}" style="width:${pctShow}%"></div>
         </div>
+        ${statusTxt}
       </div>`;
   });
 
@@ -774,7 +813,7 @@ function renderOrcamento() {
 
     <div class="card">
       <div class="card-title">Resultado ${currentMonth.label}</div>
-      <div class="orc-row"><div class="orc-label">💳 Fatura cartão</div><div class="orc-value" style="color:var(--red)">${formatMoney(totalFatura)}</div></div>
+      <div class="orc-row"><div class="orc-label">💳 Fatura cartão</div><div class="orc-value" style="color:${totalFatura > (config.meta_fatura||12000) ? 'var(--red)' : totalFatura > (config.meta_fatura||12000)*0.75 ? 'var(--amber)' : 'var(--green)'}">${formatMoney(totalFatura)}</div></div>
       <div class="orc-row"><div class="orc-label">🎯 Meta fatura</div><div class="orc-value" style="color:var(--accent)">${formatMoney(config.meta_fatura||12000)}</div></div>
       <div class="orc-row total">
         <div class="orc-label">Sobra / Poupança</div>
@@ -793,38 +832,82 @@ function renderOrcamento() {
 function renderHistorico() {
   const renda = (config.renda_guilherme||20000) + (config.renda_esposa||14000);
   const fixos = config.total_fixos || 14559;
-  const meta = config.meta_fatura || 12000;
+  const meta  = config.meta_fatura || 12000;
 
   let html = '';
   const monthsWithData = MONTHS.filter(m => {
-    const lancs = getLancamentosDoMes(m);
-    return lancs.length > 0 || m.label === currentMonth.label;
+    return getLancamentosDoMes(m).length > 0 || m.label === currentMonth.label;
   });
 
   if (monthsWithData.length === 0) {
     html = `<div class="empty"><div class="empty-icon">📅</div><div class="empty-text">Nenhum dado ainda. Comece lançando suas compras!</div></div>`;
   } else {
     monthsWithData.forEach(m => {
-      const lancs = getLancamentosDoMes(m);
-      const total = lancs.reduce((a,l)=>a+l.valor,0);
-      const sobra = renda - fixos - total;
-      const pct = meta > 0 ? Math.min(total/meta,1.2) : 0;
+      const lancs  = getLancamentosDoMes(m);
+      const totais = getTotaisPorCategoria(lancs);
+      const total  = Object.values(totais).reduce((a,b)=>a+b,0);
+      const sobra  = renda - fixos - total;
+      const pctSobra = renda > 0 ? sobra/renda : 0;
+      const pct    = meta > 0 ? Math.min(total/meta,1.5) : 0;
       const barPct = Math.min(pct*100, 100);
-      const barClass = pct < 0.75 ? 'ok' : pct < 1 ? 'warn' : 'over';
-      const sobraClass = sobra >= 0 ? 'green' : 'red';
       const isCurrent = m.label === currentMonth.label;
+
+      const faturaCor = pct >= 1 ? 'var(--red)' : pct >= 0.75 ? 'var(--amber)' : 'var(--green)';
+      const sobraCor  = sobra >= 0 ? 'var(--green)' : 'var(--red)';
+      const sobraBarCor = sobra >= 0 ? 'var(--green)' : 'var(--red)';
+
+      let statusBadge = '';
+      if (lancs.length === 0) statusBadge = '<span class="hist-status-badge badge-empty">Sem dados</span>';
+      else if (pct >= 1)      statusBadge = '<span class="hist-status-badge badge-over">Acima da meta</span>';
+      else if (pct >= 0.75)   statusBadge = '<span class="hist-status-badge badge-warn">Atenção</span>';
+      else                    statusBadge = '<span class="hist-status-badge badge-ok">Dentro da meta</span>';
+
+      // Category rows (only those with value > 0)
+      const catRows = Object.entries(totais)
+        .filter(([,v]) => v > 0)
+        .map(([cat,v]) => {
+          const teto = TETOS[cat] || 0;
+          const cp = teto > 0 ? v/teto : 0;
+          const cc = cp >= 1 ? 'var(--red)' : cp >= 0.75 ? 'var(--amber)' : 'var(--green)';
+          return `<div class="hist-cat-row">
+            <span class="hist-cat-name">${CAT_ICONS[cat]||'💳'} ${cat}</span>
+            <span class="hist-cat-val" style="color:${cc}">${formatMoney(v)} <span style="color:var(--muted);font-size:10px">/ ${formatMoney(teto)}</span></span>
+          </div>`;
+        }).join('');
 
       html += `<div class="hist-month" style="${isCurrent?'border-color:var(--accent)':''}">
         <div class="hist-header">
           <div class="hist-label">${m.label}${isCurrent?' <span style="font-size:10px;color:var(--accent);font-weight:400">atual</span>':''}</div>
-          <div class="hist-total" style="color:${pct>=1?'var(--red)':pct>=0.75?'var(--amber)':'var(--green)'}">${formatMoney(total)}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="hist-total" style="color:${faturaCor}">${formatMoney(total)}</div>
+            ${statusBadge}
+          </div>
         </div>
         <div class="hist-bar-wrap">
-          <div class="hist-bar" style="width:${barPct}%;background:${pct>=1?'var(--red)':pct>=0.75?'var(--amber)':'var(--green)'}"></div>
+          <div class="hist-bar" style="width:${barPct}%;background:${faturaCor}"></div>
         </div>
-        <div class="hist-detail">
-          <span>${lancs.length} lançamento${lancs.length!==1?'s':''} · meta ${formatMoney(meta)}</span>
-          <span class="hist-sobra" style="color:${sobra>=0?'var(--green)':'var(--red)'}">${sobra>=0?'+':''}${formatMoney(sobra)}</span>
+
+        <div class="hist-expanded">
+          <div class="hist-exp-row">
+            <span class="hist-exp-label">🎯 Meta fatura</span>
+            <span class="hist-exp-value" style="color:var(--accent)">${formatMoney(meta)}</span>
+          </div>
+          <div class="hist-exp-row">
+            <span class="hist-exp-label">🏠 Total fixos</span>
+            <span class="hist-exp-value">${formatMoney(fixos)}</span>
+          </div>
+          <div class="hist-exp-row">
+            <span class="hist-exp-label">💼 Renda familiar</span>
+            <span class="hist-exp-value">${formatMoney(renda)}</span>
+          </div>
+          <div class="hist-exp-row" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px">
+            <span class="hist-exp-label" style="font-weight:600;color:var(--text)">💰 Sobra / Poupança</span>
+            <span class="hist-exp-value" style="color:${sobraCor};font-size:14px">${sobra>=0?'+':''}${formatMoney(sobra)} <span style="font-size:10px;opacity:.7">${(pctSobra*100).toFixed(1)}%</span></span>
+          </div>
+          ${catRows.length ? `<div class="hist-cats" style="margin-top:10px">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Por categoria</div>
+            ${catRows}
+          </div>` : ''}
         </div>
       </div>`;
     });
@@ -899,12 +982,13 @@ function goTo(screen, btn) {
   if (screen==='orcamento')   renderOrcamento();
   if (screen==='historico')   renderHistorico();
   if (screen==='painel')      renderPainel();
+  if (screen==='detalhe')     {} // content set before calling goTo
   window.scrollTo(0,0);
 }
 
 function goToFromBtn(screen) {
   const btns = document.querySelectorAll('.nav-btn');
-  const map = {painel:0, lancar:1, lancamentos:2, orcamento:3, historico:4};
+  const map = {painel:0, lancar:1, lancamentos:2, orcamento:3, historico:4, detalhe:4};
   goTo(screen, btns[map[screen]]);
 }
 
