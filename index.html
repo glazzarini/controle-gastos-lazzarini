@@ -676,9 +676,9 @@ function renderPainel() {
     const gasto = totais[cat] || 0;
     const pct = teto > 0 ? Math.min(gasto/teto, 1.2) : 0;
     const pctShow = teto > 0 ? Math.min(gasto/teto*100, 100) : 0;
-    const cls = pct < 0.75 ? 'ok' : pct < 1 ? 'warn' : 'over';
+    const cls = pct > 1 ? 'over' : pct >= 0.75 ? 'warn' : 'ok';
     const icon = CAT_ICONS[cat] || '💳';
-    const statusTxt = gasto===0 ? '' : pct>=1 ? '<span style="font-size:10px;color:var(--red)">🔴 Estourou</span>' : pct>=0.75 ? '<span style="font-size:10px;color:var(--amber)">🟡 Atenção</span>' : '<span style="font-size:10px;color:var(--green)">✅ OK</span>';
+    const statusTxt = gasto===0 ? '' : pct>1 ? '<span style="font-size:10px;color:var(--red)">🔴 Estourou</span>' : pct>=0.75 ? '<span style="font-size:10px;color:var(--amber)">🟡 Atenção</span>' : '<span style="font-size:10px;color:var(--green)">✅ OK</span>';
     html += `
       <div class="cat-item">
         <div class="cat-header">
@@ -715,8 +715,22 @@ function renderPainel() {
   document.getElementById('painel-content').innerHTML = html;
 }
 
+function getCatColor(categoria, lancamentos) {
+  // Get total for this category in the current month's lancamentos context
+  const lancsDoMes = getLancamentosDoMes(currentMonth);
+  const totais = getTotaisPorCategoria(lancsDoMes);
+  const gasto = totais[categoria] || 0;
+  const teto  = TETOS[categoria]  || 0;
+  if (teto === 0 || gasto === 0) return 'var(--muted)';
+  const pct = gasto / teto;
+  if (pct > 1)    return 'var(--red)';
+  if (pct >= 0.75) return 'var(--amber)';
+  return 'var(--green)';
+}
+
 function renderLancItem(l) {
-  const icon = CAT_ICONS[l.categoria] || '💳';
+  const icon  = CAT_ICONS[l.categoria] || '💳';
+  const color = getCatColor(l.categoria);
   return `<div class="lanc-item">
     <div class="lanc-icon">${icon}</div>
     <div class="lanc-info">
@@ -724,7 +738,7 @@ function renderLancItem(l) {
       <div class="lanc-cat">${l.categoria}${l.estabelecimento ? ' · '+l.estabelecimento : ''}</div>
     </div>
     <div class="lanc-right">
-      <div class="lanc-value">-${formatMoney(l.valor)}</div>
+      <div class="lanc-value" style="color:${color}">-${formatMoney(l.valor)}</div>
       <div class="lanc-date">${formatDate(l.data)}</div>
     </div>
   </div>`;
@@ -852,13 +866,13 @@ function renderHistorico() {
       const barPct = Math.min(pct*100, 100);
       const isCurrent = m.label === currentMonth.label;
 
-      const faturaCor = pct >= 1 ? 'var(--red)' : pct >= 0.75 ? 'var(--amber)' : 'var(--green)';
+      const faturaCor = pct > 1 ? 'var(--red)' : pct >= 0.75 ? 'var(--amber)' : 'var(--green)';
       const sobraCor  = sobra >= 0 ? 'var(--green)' : 'var(--red)';
       const sobraBarCor = sobra >= 0 ? 'var(--green)' : 'var(--red)';
 
       let statusBadge = '';
       if (lancs.length === 0) statusBadge = '<span class="hist-status-badge badge-empty">Sem dados</span>';
-      else if (pct >= 1)      statusBadge = '<span class="hist-status-badge badge-over">Acima da meta</span>';
+      else if (pct > 1)       statusBadge = '<span class="hist-status-badge badge-over">Acima da meta</span>';
       else if (pct >= 0.75)   statusBadge = '<span class="hist-status-badge badge-warn">Atenção</span>';
       else                    statusBadge = '<span class="hist-status-badge badge-ok">Dentro da meta</span>';
 
@@ -868,7 +882,7 @@ function renderHistorico() {
         .map(([cat,v]) => {
           const teto = TETOS[cat] || 0;
           const cp = teto > 0 ? v/teto : 0;
-          const cc = cp >= 1 ? 'var(--red)' : cp >= 0.75 ? 'var(--amber)' : 'var(--green)';
+          const cc = cp > 1 ? 'var(--red)' : cp >= 0.75 ? 'var(--amber)' : 'var(--green)';
           return `<div class="hist-cat-row">
             <span class="hist-cat-name">${CAT_ICONS[cat]||'💳'} ${cat}</span>
             <span class="hist-cat-val" style="color:${cc}">${formatMoney(v)} <span style="color:var(--muted);font-size:10px">/ ${formatMoney(teto)}</span></span>
