@@ -535,7 +535,7 @@ body{
 // ── CONFIG ─────────────────────────────────────────────────────────────────
 const SHEET_ID  = '19I5LZsCvctD0d5ug7WnwbuOhTSbB0hUNw373zSEuHcc';
 const API_KEY   = 'AIzaSyADPwsG67nQxNn010Js3ua3xC3MZ9vZttM';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzUxo2FUcyKEdpubGZRUe7YfVixe3s9maO847mf9YsIVPrxQ92owgYXK-5xpeW0tqAG/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyfL4O5uSARYgDsdQTLzhRQQOQGiFtxExmN1RLYZKUSQfSNJBGu6v797ByBQ7-ErFBp/exec';
 const BASE_URL  = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
 
 // ── STATE ──────────────────────────────────────────────────────────────────
@@ -598,31 +598,26 @@ async function sheetsGet(range) {
 }
 
 async function scriptPost(payload) {
-  if (payload.action === 'delete') {
-    // Use GET with query params for delete — avoids CORS redirect issues
-    const params = new URLSearchParams({
-      action:          'delete',
-      data:            payload.data,
-      descricao:       payload.descricao || '',
-      categoria:       payload.categoria || '',
-      valor:           String(payload.valor),
-      estabelecimento: payload.estabelecimento || '',
-      tipo:            payload.tipo || '',
+  try {
+    const r = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify(payload),
+      redirect: 'follow',
     });
-    await fetch(`${SCRIPT_URL}?${params.toString()}`, {
-      method: 'GET',
-      mode: 'no-cors',
-    });
-  } else {
-    // POST no-cors for insert
-    await fetch(SCRIPT_URL, {
+    const text = await r.text();
+    try { return JSON.parse(text); } catch { return {status:'ok'}; }
+  } catch(e) {
+    // fallback no-cors (fire and forget)
+    fetch(SCRIPT_URL, {
       method: 'POST',
       mode: 'no-cors',
       headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
+    await new Promise(r => setTimeout(r, 600));
+    return {status:'ok'};
   }
-  await new Promise(r => setTimeout(r, 400));
 }
 
 async function sheetsAppend(range, values) {
