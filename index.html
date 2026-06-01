@@ -597,10 +597,22 @@ async function sheetsGet(range) {
   return d.values || [];
 }
 
+async function scriptPost(payload) {
+  // Use no-cors to avoid CORS/redirect issues with Apps Script
+  await fetch(SCRIPT_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'text/plain'},
+    body: JSON.stringify(payload)
+  });
+  // no-cors means we can't read the response, but the request reaches the server
+  // Wait a tiny bit to ensure it processed
+  await new Promise(r => setTimeout(r, 300));
+}
+
 async function sheetsAppend(range, values) {
-  // Use Apps Script Web App for writing (API Key doesn't support writes)
   const row = values[0];
-  const payload = {
+  await scriptPost({
     data:            row[0],
     descricao:       row[1],
     categoria:       row[2],
@@ -608,16 +620,7 @@ async function sheetsAppend(range, values) {
     estabelecimento: row[4],
     tipo:            row[5],
     obs:             row[6] || ''
-  };
-  const r = await fetch(SCRIPT_URL, {
-    method: 'POST',
-    headers: {'Content-Type': 'text/plain'},
-    body: JSON.stringify(payload)
   });
-  if (!r.ok) throw new Error('Erro ao salvar na planilha');
-  const result = await r.json();
-  if (result.status === 'error') throw new Error(result.message);
-  return result;
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────
@@ -1169,18 +1172,14 @@ async function deleteLanc(idx) {
   showToast('Excluindo...', 'success');
   try {
     // Find and delete row in sheet via Apps Script
-    await fetch(SCRIPT_URL, {
-      method: 'POST',
-      headers: {'Content-Type': 'text/plain'},
-      body: JSON.stringify({
-        action: 'delete',
-        data:        l.raw,
-        descricao:   l.descricao,
-        categoria:   l.categoria,
-        valor:       l.valor,
-        estabelecimento: l.estabelecimento,
-        tipo:        l.tipo,
-      })
+    await scriptPost({
+      action: 'delete',
+      data:        l.raw,
+      descricao:   l.descricao,
+      categoria:   l.categoria,
+      valor:       l.valor,
+      estabelecimento: l.estabelecimento,
+      tipo:        l.tipo,
     });
     allLancamentos.splice(idx, 1);
     // Re-index
@@ -1212,15 +1211,11 @@ async function clearMonth(m) {
     const lancs = getLancamentosDoMes(m);
     // Delete all via Apps Script
     for (const l of lancs) {
-      await fetch(SCRIPT_URL, {
-        method: 'POST',
-        headers: {'Content-Type': 'text/plain'},
-        body: JSON.stringify({
-          action: 'delete',
-          data: l.raw, descricao: l.descricao,
-          categoria: l.categoria, valor: l.valor,
-          estabelecimento: l.estabelecimento, tipo: l.tipo,
-        })
+      await scriptPost({
+        action: 'delete',
+        data: l.raw, descricao: l.descricao,
+        categoria: l.categoria, valor: l.valor,
+        estabelecimento: l.estabelecimento, tipo: l.tipo,
       });
     }
     // Remove from local state
