@@ -305,6 +305,50 @@ body{
 .section-title{font-size:13px;font-weight:600;color:var(--text)}
 .section-count{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
 
+/* ── DELETE BTN ──────────────────────────────────────────────────────────── */
+.lanc-delete{
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  padding:6px;border-radius:8px;transition:all .15s;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.lanc-delete:hover{color:var(--red);background:rgba(239,68,68,.1)}
+.lanc-delete svg{width:16px;height:16px;stroke-width:1.8}
+
+/* ── CLEAR MONTH BTN ─────────────────────────────────────────────────────── */
+.clear-month-btn{
+  width:100%;margin-top:12px;padding:9px;
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);
+  border-radius:10px;color:var(--red);
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.clear-month-btn:hover{background:rgba(239,68,68,.15)}
+
+/* ── PARCEL FIELD ────────────────────────────────────────────────────────── */
+.parcel-info{
+  background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);
+  border-radius:10px;padding:10px 12px;font-size:12px;color:var(--accent);
+  margin-top:-6px;margin-bottom:14px;
+}
+
+/* ── CONFIRM MODAL ───────────────────────────────────────────────────────── */
+.confirm-modal{
+  position:fixed;inset:0;z-index:400;
+  background:rgba(0,0,0,.8);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.confirm-modal.open{opacity:1;pointer-events:all}
+.confirm-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:24px;width:100%;max-width:320px;
+}
+.confirm-title{font-size:16px;font-weight:600;margin-bottom:8px}
+.confirm-text{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.5}
+.confirm-btns{display:flex;gap:10px}
+.confirm-cancel{flex:1;padding:11px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;}
+.confirm-ok{flex:1;padding:11px;background:var(--red);border:none;border-radius:10px;color:#fff;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;}
+
 /* ── DIVIDER ─────────────────────────────────────────────────────────────── */
 .divider{height:1px;background:var(--border);margin:16px 0}
 
@@ -353,7 +397,7 @@ body{
         <label class="form-label">Valor</label>
         <div class="value-input-wrap">
           <span class="value-prefix">R$</span>
-          <input class="form-input" id="f-valor" type="number" inputmode="decimal" placeholder="0,00" step="0.01" min="0">
+          <input class="form-input" id="f-valor" type="number" inputmode="decimal" placeholder="0,00" step="0.01" min="0" oninput="updateParcelPreview()">
         </div>
       </div>
 
@@ -384,15 +428,21 @@ body{
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Data</label>
-          <input class="form-input" id="f-data" type="date">
+          <input class="form-input" id="f-data" type="date" onchange="updateParcelPreview()">
         </div>
         <div class="form-group">
           <label class="form-label">Tipo</label>
-          <select class="form-select" id="f-tipo">
+          <select class="form-select" id="f-tipo" onchange="onTipoChange()">
             <option>A vista</option>
             <option>Parcelado</option>
           </select>
         </div>
+      </div>
+
+      <div class="form-group" id="parcel-group" style="display:none">
+        <label class="form-label">Número de parcelas</label>
+        <input class="form-input" id="f-parcelas" type="number" inputmode="numeric" placeholder="Ex: 7" min="2" max="48" value="2" oninput="updateParcelPreview()">
+        <div class="parcel-info" id="parcel-preview" style="margin-top:8px;display:none"></div>
       </div>
 
       <div class="form-group">
@@ -466,6 +516,18 @@ body{
   </div>
 </div>
 
+<!-- CONFIRM MODAL -->
+<div class="confirm-modal" id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirm-title">Confirmar</div>
+    <div class="confirm-text" id="confirm-text"></div>
+    <div class="confirm-btns">
+      <button class="confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+      <button class="confirm-ok" id="confirm-ok-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -473,7 +535,7 @@ body{
 // ── CONFIG ─────────────────────────────────────────────────────────────────
 const SHEET_ID  = '19I5LZsCvctD0d5ug7WnwbuOhTSbB0hUNw373zSEuHcc';
 const API_KEY   = 'AIzaSyADPwsG67nQxNn010Js3ua3xC3MZ9vZttM';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9BtA7BWStMT1P01o524qzSWLbSeJT8cpEgRbW59ir3zhg_XB9efbTUWD4ri23HB8/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyDcVC5cCUdjTisGta6ibgO-aB4sZKIFoU8FGM11SRy7bfMcM1hbgTS8ryup3Xqka-_/exec';
 const BASE_URL  = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
 
 // ── STATE ──────────────────────────────────────────────────────────────────
@@ -597,6 +659,7 @@ async function loadData() {
       });
     }
     allLancamentos.sort((a,b) => b.data - a.data);
+    allLancamentos.forEach((item, i) => item._idx = i);
   } catch(e) {
     console.error(e);
     // Use empty data if sheets not set up yet
@@ -728,9 +791,13 @@ function getCatColor(categoria, lancamentos) {
   return 'var(--green)';
 }
 
-function renderLancItem(l) {
+function renderLancItem(l, showDelete=false) {
   const icon  = CAT_ICONS[l.categoria] || '💳';
   const color = getCatColor(l.categoria);
+  const deleteBtn = showDelete ? `
+    <button class="lanc-delete" onclick="confirmDeleteLanc(${l._idx})" title="Excluir">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </button>` : '';
   return `<div class="lanc-item">
     <div class="lanc-icon">${icon}</div>
     <div class="lanc-info">
@@ -741,6 +808,7 @@ function renderLancItem(l) {
       <div class="lanc-value" style="color:${color}">-${formatMoney(l.valor)}</div>
       <div class="lanc-date">${formatDate(l.data)}</div>
     </div>
+    ${deleteBtn}
   </div>`;
 }
 
@@ -764,7 +832,7 @@ function renderLancamentos() {
       </div>
     </div>
     <div class="card">`;
-    lancs.forEach(l => { html += renderLancItem(l); });
+    lancs.forEach(l => { html += renderLancItem(l, true); });
     html += `</div>`;
   }
 
@@ -925,6 +993,10 @@ function renderHistorico() {
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Por categoria</div>
             ${catRows}
           </div>` : ''}
+          <button class="clear-month-btn" onclick="confirmClearMonth('${m.label}')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="14" height="14" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            Limpar todos os lançamentos de ${m.label}
+          </button>
         </div>
       </div>`;
     });
@@ -941,43 +1013,62 @@ async function salvarLancamento() {
   const data      = document.getElementById('f-data').value;
   const tipo      = document.getElementById('f-tipo').value;
   const estab     = document.getElementById('f-estab').value.trim();
+  const nParcelas = tipo === 'Parcelado' ? (parseInt(document.getElementById('f-parcelas').value) || 1) : 1;
 
   if (!valor || valor <= 0) { showToast('Informe um valor válido', 'error'); return; }
   if (!categoria)           { showToast('Selecione uma categoria', 'error'); return; }
   if (!data)                { showToast('Informe a data', 'error'); return; }
+  if (nParcelas < 1 || nParcelas > 48) { showToast('Parcelas entre 2 e 48', 'error'); return; }
 
   const btn = document.getElementById('btn-salvar');
   btn.disabled = true;
-  btn.textContent = 'Salvando...';
 
   try {
-    // Format date as DD/MM/YYYY
     const [y,m,d] = data.split('-');
-    const dataFmt = `${d}/${m}/${y}`;
+    const valorParcela = nParcelas > 1 ? parseFloat((valor / nParcelas).toFixed(2)) : valor;
 
-    await sheetsAppend('lancamentos!A:G', [[dataFmt, descricao, categoria, valor, estab, tipo, '']]);
+    for (let i = 0; i < nParcelas; i++) {
+      const dt = new Date(parseInt(y), parseInt(m)-1 + i, parseInt(d));
+      const dy = String(dt.getDate()).padStart(2,'0');
+      const dm = String(dt.getMonth()+1).padStart(2,'0');
+      const dyr = dt.getFullYear();
+      const dataFmt = `${dy}/${dm}/${dyr}`;
+      const descParc = nParcelas > 1 ? `${descricao} (${i+1}/${nParcelas})` : descricao;
 
-    // Add to local state
-    allLancamentos.unshift({
-      data: new Date(parseInt(y), parseInt(m)-1, parseInt(d)),
-      descricao, categoria,
-      valor,
-      estabelecimento: estab,
-      tipo,
-      obs: '',
-      raw: dataFmt,
-    });
+      btn.textContent = nParcelas > 1 ? `Salvando ${i+1}/${nParcelas}...` : 'Salvando...';
 
-    showToast('Lançamento salvo! ✓', 'success');
+      await sheetsAppend('lancamentos!A:G', [[dataFmt, descParc, categoria, valorParcela, estab, tipo, '']]);
+
+      allLancamentos.unshift({
+        data: dt,
+        descricao: descParc,
+        categoria,
+        valor: valorParcela,
+        estabelecimento: estab,
+        tipo,
+        obs: '',
+        raw: dataFmt,
+        _idx: 0,
+      });
+    }
+
+    // Re-index
+    allLancamentos.sort((a,b) => b.data - a.data);
+    allLancamentos.forEach((item, i) => item._idx = i);
+    allLancamentos.forEach((item, i) => item._idx = i);
+
+    const msg = nParcelas > 1 ? `${nParcelas} parcelas salvas! ✓` : 'Lançamento salvo! ✓';
+    showToast(msg, 'success');
 
     // Reset form
     document.getElementById('f-valor').value = '';
     document.getElementById('f-categoria').value = '';
     document.getElementById('f-descricao').value = '';
     document.getElementById('f-estab').value = '';
+    document.getElementById('f-tipo').value = 'A vista';
+    document.getElementById('parcel-group').style.display = 'none';
+    document.getElementById('parcel-preview').style.display = 'none';
     setTodayDate();
-
-    // Re-render other screens
     renderPainel();
 
   } catch(e) {
@@ -1042,6 +1133,133 @@ function showToast(msg, type='success') {
   t.textContent = msg;
   t.className = `toast ${type} show`;
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── CONFIRM MODAL ─────────────────────────────────────────────────────────
+let confirmCallback = null;
+function showConfirm(title, text, onOk) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent  = text;
+  confirmCallback = onOk;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  confirmCallback = null;
+}
+document.getElementById('confirm-ok-btn').onclick = () => {
+  if (confirmCallback) confirmCallback();
+  closeConfirm();
+};
+
+// ── DELETE SINGLE LANCAMENTO ───────────────────────────────────────────────
+function confirmDeleteLanc(idx) {
+  const l = allLancamentos[idx];
+  if (!l) return;
+  showConfirm(
+    'Excluir lançamento',
+    `Excluir "${l.descricao || l.categoria}" de ${formatMoney(l.valor)} em ${formatDate(l.data)}?`,
+    () => deleteLanc(idx)
+  );
+}
+
+async function deleteLanc(idx) {
+  const l = allLancamentos[idx];
+  if (!l) return;
+  showToast('Excluindo...', 'success');
+  try {
+    // Find and delete row in sheet via Apps Script
+    await fetch(SCRIPT_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body: JSON.stringify({
+        action: 'delete',
+        data:        l.raw,
+        descricao:   l.descricao,
+        categoria:   l.categoria,
+        valor:       l.valor,
+        estabelecimento: l.estabelecimento,
+        tipo:        l.tipo,
+      })
+    });
+    allLancamentos.splice(idx, 1);
+    // Re-index
+    allLancamentos.forEach((item, i) => item._idx = i);
+    showToast('Lançamento excluído ✓', 'success');
+    renderLancamentos();
+    renderPainel();
+  } catch(e) {
+    showToast('Erro ao excluir', 'error');
+  }
+}
+
+// ── CLEAR MONTH ────────────────────────────────────────────────────────────
+function confirmClearMonth(monthLabel) {
+  const m = MONTHS.find(m => m.label === monthLabel);
+  if (!m) return;
+  const lancs = getLancamentosDoMes(m);
+  if (lancs.length === 0) { showToast('Nenhum lançamento neste mês', 'error'); return; }
+  showConfirm(
+    `Limpar ${monthLabel}`,
+    `Isso vai excluir todos os ${lancs.length} lançamento(s) de ${monthLabel}. Essa ação não pode ser desfeita.`,
+    () => clearMonth(m)
+  );
+}
+
+async function clearMonth(m) {
+  showToast('Excluindo...', 'success');
+  try {
+    const lancs = getLancamentosDoMes(m);
+    // Delete all via Apps Script
+    for (const l of lancs) {
+      await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: {'Content-Type': 'text/plain'},
+        body: JSON.stringify({
+          action: 'delete',
+          data: l.raw, descricao: l.descricao,
+          categoria: l.categoria, valor: l.valor,
+          estabelecimento: l.estabelecimento, tipo: l.tipo,
+        })
+      });
+    }
+    // Remove from local state
+    allLancamentos = allLancamentos.filter(l => {
+      return !(l.data.getMonth() === m.date.getMonth() &&
+               l.data.getFullYear() === m.date.getFullYear());
+    });
+    allLancamentos.forEach((item, i) => item._idx = i);
+    showToast(`${m.label} limpo ✓`, 'success');
+    renderHistorico();
+    renderPainel();
+  } catch(e) {
+    showToast('Erro ao limpar mês', 'error');
+  }
+}
+
+// ── PARCEL AUTO-LAUNCH ─────────────────────────────────────────────────────
+function onTipoChange() {
+  const tipo = document.getElementById('f-tipo').value;
+  const group = document.getElementById('parcel-group');
+  group.style.display = tipo === 'Parcelado' ? 'block' : 'none';
+  updateParcelPreview();
+}
+
+function updateParcelPreview() {
+  const tipo     = document.getElementById('f-tipo').value;
+  const parcelas = parseInt(document.getElementById('f-parcelas').value) || 0;
+  const valor    = parseFloat(document.getElementById('f-valor').value) || 0;
+  const data     = document.getElementById('f-data').value;
+  const preview  = document.getElementById('parcel-preview');
+  if (tipo !== 'Parcelado' || parcelas < 2 || !data) { preview.style.display='none'; return; }
+  const [y,m,d] = data.split('-');
+  const startDate = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  const endDate   = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + parcelas - 1);
+  const vlrParcela = valor / parcelas;
+  const endLabel  = endDate.toLocaleDateString('pt-BR',{month:'short',year:'2-digit'});
+  preview.style.display = 'block';
+  preview.textContent   = `${parcelas}x de ${formatMoney(vlrParcela)} · vai até ${endLabel}`;
 }
 
 // ── PWA ───────────────────────────────────────────────────────────────────
