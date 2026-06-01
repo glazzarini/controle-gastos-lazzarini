@@ -753,10 +753,13 @@ function renderLancamentos() {
     html = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Nenhum lançamento em ${currentMonth.label}</div></div>`;
   } else {
     const total = lancs.reduce((a,l)=>a+l.valor,0);
+    const metaL = config.meta_fatura || 12000;
+    const pctL  = total / metaL;
+    const totalColor = pctL > 1 ? 'red' : pctL >= 0.75 ? 'amber' : 'green';
     html += `<div class="metric-row">
       <div class="metric">
         <div class="metric-label">Total lançado</div>
-        <div class="metric-value red">${formatMoney(total)}</div>
+        <div class="metric-value ${totalColor}">${formatMoney(total)}</div>
         <div class="metric-sub">${lancs.length} lançamentos</div>
       </div>
     </div>
