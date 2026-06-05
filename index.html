@@ -367,6 +367,79 @@ body{
 /* ── DIVIDER ─────────────────────────────────────────────────────────────── */
 .divider{height:1px;background:var(--border);margin:16px 0}
 
+/* ── FILTER BAR ──────────────────────────────────────────────────────────── */
+.filter-bar{
+  display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;
+  margin-bottom:12px;scrollbar-width:none;
+}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{
+  flex-shrink:0;padding:6px 12px;border-radius:20px;
+  border:1px solid var(--border);background:var(--surface2);
+  color:var(--muted);font-size:12px;font-weight:500;cursor:pointer;
+  white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif;
+}
+.filter-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* ── EDIT MODAL ───────────────────────────────────────────────────────────── */
+.edit-modal-overlay{
+  position:fixed;inset:0;z-index:300;
+  background:rgba(0,0,0,.75);
+  display:flex;align-items:flex-end;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.edit-modal-overlay.open{opacity:1;pointer-events:all}
+.edit-modal-sheet{
+  background:var(--surface);
+  border-radius:20px 20px 0 0;
+  padding:20px 20px calc(20px + var(--safe-bot));
+  width:100%;max-width:480px;
+  transform:translateY(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);
+}
+.edit-modal-overlay.open .edit-modal-sheet{transform:translateY(0)}
+.edit-modal-title{font-size:16px;font-weight:600;margin-bottom:16px}
+.edit-save-btn{
+  width:100%;padding:14px;background:var(--accent);color:#fff;
+  border:none;border-radius:12px;font-family:'DM Sans',sans-serif;
+  font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;
+}
+
+/* ── DETAIL SCREEN ───────────────────────────────────────────────────────── */
+.detail-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--card-r);overflow:hidden;margin-bottom:12px;
+}
+.detail-hero{
+  padding:24px 20px;text-align:center;
+  border-bottom:1px solid var(--border);
+}
+.detail-hero-icon{font-size:44px;margin-bottom:8px}
+.detail-hero-desc{font-size:18px;font-weight:600;margin-bottom:4px}
+.detail-hero-cat{font-size:13px;color:var(--muted)}
+.detail-hero-value{font-size:28px;font-weight:700;font-family:'DM Mono',monospace;margin-top:10px}
+.detail-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:13px 20px;border-bottom:1px solid var(--border);
+}
+.detail-row:last-child{border-bottom:none}
+.detail-row-label{font-size:13px;color:var(--muted)}
+.detail-row-value{font-size:14px;font-weight:500}
+.detail-edit-btn{
+  width:100%;padding:14px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-bottom:10px;
+}
+.detail-delete-btn{
+  width:100%;padding:14px;
+  background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);
+  border-radius:12px;color:var(--red);
+  font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+
 /* ── SUMMARY PILL ────────────────────────────────────────────────────────── */
 .summary-pill{
   display:inline-flex;align-items:center;gap:5px;
@@ -438,7 +511,9 @@ body{
           <option>Streaming / Assinaturas</option>
           <option>Educacao / Infanto</option>
           <option>Pet</option>
-          <option>iPhone parcelado</option>
+          <option>Decoracao Casa</option>
+          <option>Guitarra</option>
+          <option>Presentes</option>
           <option>Outros / Diversos</option>
         </select>
       </div>
@@ -500,6 +575,11 @@ body{
     </div>
   </div>
 
+  <!-- ── DETALHE LANÇAMENTO ───────────────────────────────────────────────── -->
+  <div class="screen" id="screen-detalhe-lanc">
+    <div id="detalhe-lanc-content"></div>
+  </div>
+
   <!-- ── DETALHE MÊS ────────────────────────────────────────────────────── -->
   <div class="screen" id="screen-detalhe">
     <div id="detalhe-content"></div>
@@ -536,6 +616,57 @@ body{
   <div class="modal-sheet">
     <div class="modal-title">Selecionar mês</div>
     <div class="month-grid" id="month-grid"></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="edit-modal-overlay" id="edit-modal" onclick="closeEditModal(event)">
+  <div class="edit-modal-sheet">
+    <div class="edit-modal-title">Editar lançamento</div>
+    <div class="form-group">
+      <label class="form-label">Descrição</label>
+      <input class="form-input" id="edit-descricao" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoria</label>
+      <select class="form-select" id="edit-categoria">
+        <option>Alimentacao fora</option>
+        <option>Mercado / Supermercado</option>
+        <option>Farmacia / Saude</option>
+        <option>Veiculos / Transporte</option>
+        <option>Viagem / Lazer</option>
+        <option>Vestuario / Moda</option>
+        <option>Mercado Livre</option>
+        <option>Streaming / Assinaturas</option>
+        <option>Educacao / Infanto</option>
+        <option>Pet</option>
+        <option>Decoracao Casa</option>
+        <option>Guitarra</option>
+        <option>Presentes</option>
+        <option>Outros / Diversos</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Valor</label>
+      <div class="value-input-wrap">
+        <span class="value-prefix">R$</span>
+        <input class="form-input" id="edit-valor" type="number" inputmode="decimal" step="0.01" min="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Data</label>
+        <input class="form-input" id="edit-data" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-select" id="edit-tipo">
+          <option>A vista</option>
+          <option>Parcelado</option>
+        </select>
+      </div>
+    </div>
+    <button class="edit-save-btn" onclick="saveEdit()">Salvar alterações</button>
   </div>
 </div>
 
@@ -579,18 +710,20 @@ const MONTHS = [
 ];
 
 const TETOS = {
-  'Alimentacao fora':       3200,
-  'Mercado / Supermercado': 1800,
-  'Farmacia / Saude':       1400,
-  'Veiculos / Transporte':  1400,
-  'Viagem / Lazer':          600,
-  'Vestuario / Moda':        600,
+  'Alimentacao fora':        2000,
+  'Mercado / Supermercado':  1800,
+  'Farmacia / Saude':         800,
+  'Veiculos / Transporte':   1400,
+  'Viagem / Lazer':          1000,
+  'Vestuario / Moda':        1000,
   'Mercado Livre':            600,
-  'Streaming / Assinaturas': 370,
-  'Educacao / Infanto':       480,
+  'Streaming / Assinaturas':  370,
+  'Educacao / Infanto':       180,
   'Pet':                      450,
-  'iPhone parcelado':         275,
-  'Outros / Diversos':        825,
+  'Decoracao Casa':           800,
+  'Guitarra':                 300,
+  'Presentes':                800,
+  'Outros / Diversos':        500,
 };
 
 const CAT_ICONS = {
@@ -599,7 +732,8 @@ const CAT_ICONS = {
   'Viagem / Lazer':'✈','Vestuario / Moda':'🛍',
   'Mercado Livre':'📦','Streaming / Assinaturas':'📺',
   'Educacao / Infanto':'📚','Pet':'🐾',
-  'iPhone parcelado':'📱','Outros / Diversos':'🎯',
+  'Decoracao Casa':'🏠','Guitarra':'🎸',
+  'Presentes':'🎁','Outros / Diversos':'🎯',
 };
 
 let currentMonth = MONTHS[0];
@@ -802,6 +936,163 @@ function renderPainel() {
   document.getElementById('painel-content').innerHTML = html;
 }
 
+// ── CLICKABLE LANC ITEM (for lancamentos screen) ──────────────────────────
+function renderLancItemClickable(l) {
+  const icon  = CAT_ICONS[l.categoria] || '💳';
+  const color = getCatColor(l.categoria);
+  return `<div class="lanc-item" onclick="openDetalhe(${l._idx})" style="cursor:pointer">
+    <div class="lanc-icon">${icon}</div>
+    <div class="lanc-info">
+      <div class="lanc-desc">${l.descricao || l.categoria}</div>
+      <div class="lanc-cat">${l.categoria}${l.estabelecimento ? ' · '+l.estabelecimento : ''}</div>
+    </div>
+    <div class="lanc-right">
+      <div class="lanc-value" style="color:${color}">-${formatMoney(l.valor)}</div>
+      <div class="lanc-date">${formatDate(l.data)}</div>
+    </div>
+    <button class="lanc-delete" onclick="event.stopPropagation();confirmDeleteLanc(${l._idx})" title="Excluir">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </button>
+  </div>`;
+}
+
+// ── DETALHE LANÇAMENTO ─────────────────────────────────────────────────────
+function openDetalhe(idx) {
+  const l = allLancamentos[idx];
+  if (!l) return;
+  const icon  = CAT_ICONS[l.categoria] || '💳';
+  const color = getCatColor(l.categoria);
+
+  const html = `
+    <button class="back-btn" onclick="goToFromBtn('lancamentos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Voltar
+    </button>
+    <div class="detail-card">
+      <div class="detail-hero">
+        <div class="detail-hero-icon">${icon}</div>
+        <div class="detail-hero-desc">${l.descricao || '(sem descrição)'}</div>
+        <div class="detail-hero-cat">${l.categoria}</div>
+        <div class="detail-hero-value" style="color:${color}">-${formatMoney(l.valor)}</div>
+      </div>
+      <div class="detail-row">
+        <span class="detail-row-label">📅 Data</span>
+        <span class="detail-row-value">${formatDate(l.data)}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-row-label">💳 Tipo</span>
+        <span class="detail-row-value">${l.tipo || 'A vista'}</span>
+      </div>
+      ${l.estabelecimento ? `<div class="detail-row">
+        <span class="detail-row-label">🏪 Estabelecimento</span>
+        <span class="detail-row-value">${l.estabelecimento}</span>
+      </div>` : ''}
+      ${l.obs ? `<div class="detail-row">
+        <span class="detail-row-label">📝 Observação</span>
+        <span class="detail-row-value">${l.obs}</span>
+      </div>` : ''}
+    </div>
+    <button class="detail-edit-btn" onclick="openEditModal(${idx})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16" stroke-width="2">
+        <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+        <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+      </svg>
+      Editar lançamento
+    </button>
+    <button class="detail-delete-btn" onclick="confirmDeleteLanc(${idx})">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16" stroke-width="2">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+      </svg>
+      Excluir lançamento
+    </button>`;
+
+  document.getElementById('detalhe-lanc-content').innerHTML = html;
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-detalhe-lanc').classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── EDIT MODAL ─────────────────────────────────────────────────────────────
+let editingIdx = null;
+
+function openEditModal(idx) {
+  const l = allLancamentos[idx];
+  if (!l) return;
+  editingIdx = idx;
+  document.getElementById('edit-descricao').value  = l.descricao || '';
+  document.getElementById('edit-categoria').value  = l.categoria || '';
+  document.getElementById('edit-valor').value      = l.valor;
+  document.getElementById('edit-tipo').value       = l.tipo || 'A vista';
+  // Convert date to YYYY-MM-DD for input
+  const d = l.data;
+  const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('edit-data').value = ds;
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal(e) {
+  if (!e || e.target === document.getElementById('edit-modal')) {
+    document.getElementById('edit-modal').classList.remove('open');
+    editingIdx = null;
+  }
+}
+
+async function saveEdit() {
+  if (editingIdx === null) return;
+  const l = allLancamentos[editingIdx];
+  if (!l) return;
+
+  const newDesc  = document.getElementById('edit-descricao').value.trim();
+  const newCat   = document.getElementById('edit-categoria').value;
+  const newValor = parseFloat(document.getElementById('edit-valor').value);
+  const newTipo  = document.getElementById('edit-tipo').value;
+  const newDataRaw = document.getElementById('edit-data').value;
+  if (!newDataRaw || !newCat || !newValor) { showToast('Preencha todos os campos', 'error'); return; }
+
+  const [y,m,d] = newDataRaw.split('-');
+  const newDataFmt = `${d}/${m}/${y}`;
+  const newDate = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+
+  const btn = document.querySelector('.edit-save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+
+  try {
+    // Delete old + insert new
+    await scriptPost({
+      action: 'delete',
+      data: l.raw, descricao: l.descricao,
+      categoria: l.categoria, valor: l.valor,
+      estabelecimento: l.estabelecimento, tipo: l.tipo,
+    });
+    await scriptPost({
+      data: newDataFmt, descricao: newDesc,
+      categoria: newCat, valor: newValor,
+      estabelecimento: l.estabelecimento, tipo: newTipo, obs: l.obs||''
+    });
+
+    // Update local state
+    allLancamentos[editingIdx] = {
+      ...l,
+      data: newDate, raw: newDataFmt,
+      descricao: newDesc, categoria: newCat,
+      valor: newValor, tipo: newTipo,
+    };
+    allLancamentos.sort((a,b) => b.data - a.data);
+    allLancamentos.forEach((item,i) => item._idx = i);
+
+    closeEditModal();
+    showToast('Lançamento atualizado ✓', 'success');
+    // Refresh detalhe screen with new idx
+    const newIdx = allLancamentos.findIndex(x => x.raw === newDataFmt && x.descricao === newDesc && x.valor === newValor);
+    if (newIdx >= 0) openDetalhe(newIdx);
+    renderPainel();
+  } catch(e) {
+    showToast('Erro ao salvar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar alterações';
+  }
+}
+
 function getCatColor(categoria, lancamentos) {
   // Get total for this category in the current month's lancamentos context
   const lancsDoMes = getLancamentosDoMes(currentMonth);
@@ -837,29 +1128,52 @@ function renderLancItem(l, showDelete=false) {
 }
 
 // ── RENDER LANCAMENTOS ────────────────────────────────────────────────────
+let activeFilter = 'Todos';
+
+function setFilter(cat) {
+  activeFilter = cat;
+  renderLancamentos();
+}
+
 function renderLancamentos() {
   const lancs = getLancamentosDoMes(currentMonth);
-  let html = '';
+  const total = lancs.reduce((a,l)=>a+l.valor,0);
+  const metaL = config.meta_fatura || 12000;
+  const pctL  = total / metaL;
+  const totalColor = pctL > 1 ? 'red' : pctL >= 0.75 ? 'amber' : 'green';
 
+  // Build filter chips from categories that have entries
+  const usedCats = ['Todos', ...Object.keys(TETOS).filter(cat => lancs.some(l => l.categoria === cat))];
+  // Also add any category not in TETOS
+  lancs.forEach(l => { if (l.categoria && !usedCats.includes(l.categoria)) usedCats.push(l.categoria); });
+
+  let html = '';
   if (lancs.length === 0) {
     html = `<div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Nenhum lançamento em ${currentMonth.label}</div></div>`;
   } else {
-    const total = lancs.reduce((a,l)=>a+l.valor,0);
-    const metaL = config.meta_fatura || 12000;
-    const pctL  = total / metaL;
-    const totalColor = pctL > 1 ? 'red' : pctL >= 0.75 ? 'amber' : 'green';
-    html += `<div class="metric-row">
-      <div class="metric">
-        <div class="metric-label">Total lançado</div>
-        <div class="metric-value ${totalColor}">${formatMoney(total)}</div>
-        <div class="metric-sub">${lancs.length} lançamentos</div>
-      </div>
-    </div>
-    <div class="card">`;
-    lancs.forEach(l => { html += renderLancItem(l, true); });
-    html += `</div>`;
-  }
+    html += `<div class="metric-row"><div class="metric">
+      <div class="metric-label">Total lançado</div>
+      <div class="metric-value ${totalColor}">${formatMoney(total)}</div>
+      <div class="metric-sub">${lancs.length} lançamento${lancs.length!==1?'s':''}</div>
+    </div></div>`;
 
+    // Filter bar
+    html += `<div class="filter-bar">`;
+    usedCats.forEach(cat => {
+      const icon = cat === 'Todos' ? '' : (CAT_ICONS[cat]||'') + ' ';
+      html += `<div class="filter-chip ${cat===activeFilter?'active':''}" onclick="setFilter('${cat}')">${icon}${cat}</div>`;
+    });
+    html += `</div>`;
+
+    const filtered = activeFilter === 'Todos' ? lancs : lancs.filter(l => l.categoria === activeFilter);
+    if (filtered.length === 0) {
+      html += `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">Nenhum lançamento nesta categoria</div></div>`;
+    } else {
+      html += `<div class="card">`;
+      filtered.forEach(l => { html += renderLancItemClickable(l); });
+      html += `</div>`;
+    }
+  }
   document.getElementById('lancamentos-content').innerHTML = html;
 }
 
@@ -1110,7 +1424,7 @@ function goTo(screen, btn) {
   document.getElementById('screen-'+screen).classList.add('active');
   if(btn) btn.classList.add('active');
 
-  if (screen==='lancamentos') renderLancamentos();
+  if (screen==='lancamentos') { activeFilter = 'Todos'; renderLancamentos(); }
   if (screen==='orcamento')   renderOrcamento();
   if (screen==='historico')   renderHistorico();
   if (screen==='painel')      renderPainel();
@@ -1119,6 +1433,7 @@ function goTo(screen, btn) {
 }
 
 function goToFromBtn(screen) {
+  if (screen === 'lancamentos') activeFilter = 'Todos';
   const btns = document.querySelectorAll('.nav-btn');
   const map = {painel:0, lancar:1, lancamentos:2, orcamento:3, historico:4, detalhe:4};
   goTo(screen, btns[map[screen]]);
@@ -1231,7 +1546,13 @@ async function deleteLanc(idx) {
     // Re-index
     allLancamentos.forEach((item, i) => item._idx = i);
     showToast('Lançamento excluído ✓', 'success');
-    renderLancamentos();
+    // If on detalhe screen, go back to lancamentos
+    const activeScreen = document.querySelector('.screen.active');
+    if (activeScreen && activeScreen.id === 'screen-detalhe-lanc') {
+      goToFromBtn('lancamentos');
+    } else {
+      renderLancamentos();
+    }
     renderPainel();
   } catch(e) {
     showToast('Erro ao excluir', 'error');
