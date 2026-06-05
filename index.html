@@ -544,8 +544,8 @@ body{
       </div>
 
       <div class="form-group">
-        <label class="form-label">Estabelecimento <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
-        <input class="form-input" id="f-estab" type="text" placeholder="Ex: McDonald's">
+        <label class="form-label">Observação <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+        <input class="form-input" id="f-estab" type="text" placeholder="Ex: Pneus do TCross, aniversário da Laura...">
       </div>
 
       <button class="btn-primary" id="btn-salvar" onclick="salvarLancamento()">
@@ -665,6 +665,10 @@ body{
           <option>Parcelado</option>
         </select>
       </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Observação <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+      <input class="form-input" id="edit-obs" type="text" placeholder="Ex: Pneus do TCross, Porto de Galinhas...">
     </div>
     <button class="edit-save-btn" onclick="saveEdit()">Salvar alterações</button>
   </div>
@@ -984,13 +988,10 @@ function openDetalhe(idx) {
         <span class="detail-row-value">${l.tipo || 'A vista'}</span>
       </div>
       ${l.estabelecimento ? `<div class="detail-row">
-        <span class="detail-row-label">🏪 Estabelecimento</span>
+        <span class="detail-row-label">📝 Observação</span>
         <span class="detail-row-value">${l.estabelecimento}</span>
       </div>` : ''}
-      ${l.obs ? `<div class="detail-row">
-        <span class="detail-row-label">📝 Observação</span>
-        <span class="detail-row-value">${l.obs}</span>
-      </div>` : ''}
+
     </div>
     <button class="detail-edit-btn" onclick="openEditModal(${idx})">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" width="16" height="16" stroke-width="2">
@@ -1023,6 +1024,7 @@ function openEditModal(idx) {
   document.getElementById('edit-categoria').value  = l.categoria || '';
   document.getElementById('edit-valor').value      = l.valor;
   document.getElementById('edit-tipo').value       = l.tipo || 'A vista';
+  document.getElementById('edit-obs').value        = l.estabelecimento || '';
   // Convert date to YYYY-MM-DD for input
   const d = l.data;
   const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1064,10 +1066,11 @@ async function saveEdit() {
       categoria: l.categoria, valor: l.valor,
       estabelecimento: l.estabelecimento, tipo: l.tipo,
     });
+    const newObs = document.getElementById('edit-obs').value.trim();
     await scriptPost({
       data: newDataFmt, descricao: newDesc,
       categoria: newCat, valor: newValor,
-      estabelecimento: l.estabelecimento, tipo: newTipo, obs: l.obs||''
+      estabelecimento: newObs, tipo: newTipo, obs: ''
     });
 
     // Update local state
@@ -1076,6 +1079,7 @@ async function saveEdit() {
       data: newDate, raw: newDataFmt,
       descricao: newDesc, categoria: newCat,
       valor: newValor, tipo: newTipo,
+      estabelecimento: newObs,
     };
     allLancamentos.sort((a,b) => b.data - a.data);
     allLancamentos.forEach((item,i) => item._idx = i);
@@ -1463,7 +1467,14 @@ function selectMonth(label) {
   document.getElementById('topbar-month').textContent = label;
   document.getElementById('month-modal').classList.remove('open');
   buildMonthGrid();
-  renderPainel();
+  // Re-render whichever screen is currently active
+  const active = document.querySelector('.screen.active');
+  const id = active ? active.id.replace('screen-', '') : 'painel';
+  if (id === 'painel')      renderPainel();
+  else if (id === 'lancamentos') { activeFilter = 'Todos'; renderLancamentos(); }
+  else if (id === 'orcamento')   renderOrcamento();
+  else if (id === 'historico')   renderHistorico();
+  else renderPainel(); // fallback for detalhe screens
 }
 
 // ── TOAST ─────────────────────────────────────────────────────────────────
