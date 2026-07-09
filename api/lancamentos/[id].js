@@ -1,9 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+let supabase;
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+      realtime: { transport: ws },
+    });
+  }
+  return supabase;
+}
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -36,7 +42,7 @@ export default async function handler(req, res) {
   // ── DELETE /api/lancamentos/:id ───────────────────────────────────────────
   if (req.method === 'DELETE') {
     try {
-      const { error } = await supabase
+      const { error } = await getSupabase()
         .from('lancamentos')
         .delete()
         .eq('id', id);
@@ -62,7 +68,7 @@ export default async function handler(req, res) {
       if (observacao !== undefined) updates.observacao = observacao;
       if (tipo)       updates.tipo       = tipo;
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('lancamentos')
         .update(updates)
         .eq('id', id)

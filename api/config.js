@@ -1,9 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+let supabase;
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+      realtime: { transport: ws },
+    });
+  }
+  return supabase;
+}
 
 // Mapeamento chave do banco → nome da categoria no app
 const TETO_MAP = {
@@ -44,7 +50,7 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { data, error } = await supabase.from('config').select('*');
+    const { data, error } = await getSupabase().from('config').select('*');
     if (error) throw error;
 
     const map = {};

@@ -1,9 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
+import ws from 'ws';
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+let supabase;
+function getSupabase() {
+  if (!supabase) {
+    supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY, {
+      realtime: { transport: ws },
+    });
+  }
+  return supabase;
+}
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,7 +32,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     try {
       const mes = req.query?.mes; // formato YYYY-MM
-      let query = supabase
+      let query = getSupabase()
         .from('lancamentos')
         .select('*')
         .order('data', { ascending: false })
@@ -87,7 +93,7 @@ export default async function handler(req, res) {
         });
       }
 
-      const { data, error } = await supabase
+      const { data, error } = await getSupabase()
         .from('lancamentos')
         .insert(rows)
         .select('id');
