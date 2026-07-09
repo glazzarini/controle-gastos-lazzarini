@@ -1,0 +1,112 @@
+> [debug] [2026-07-09T04:01:31.451Z] Found config in file "/home/guilherme/Documentos/financas/controle-gastos-lazzarini/vercel.json"
+Vercel CLI 54.21.1 (Node.js 20.20.2)
+> [debug] [2026-07-09T04:01:31.469Z] Agent/TTY/nonInteractive: isAgent=false agentName=none stdin.isTTY=true --non-interactive=false explicitFalse=false => nonInteractive=false
+> [debug] [2026-07-09T04:01:31.470Z] user supplied known subcommand: "dev"
+> [debug] [2026-07-09T04:01:31.680Z] Using token from `--token` argument, skipping token refresh.
+> [debug] [2026-07-09T04:01:31.743Z] #1 → GET https://api.vercel.com/v2/user
+> [debug] [2026-07-09T04:01:31.773Z] Spinner invoked (Retrieving project…) with a 1000ms delay
+> [debug] [2026-07-09T04:01:31.777Z] #2 → GET https://api.vercel.com/teams/team_GFfYeNo99gh7U1NmQECL9CLB
+> [debug] [2026-07-09T04:01:31.780Z] #3 → GET https://api.vercel.com/v9/projects/prj_11288wlSM7g99uIdcsLO82nnmpSb?teamId=team_GFfYeNo99gh7U1NmQECL9CLB
+> [debug] [2026-07-09T04:01:32.518Z] #2 ← 200 OK: sfo1::54whs-1783569692309-5463f74cc99d [741ms]
+> [debug] [2026-07-09T04:01:32.526Z] #1 ← 200 OK: sfo1::xxhg7-1783569692304-0c633d7702bc [783ms]
+> [debug] [2026-07-09T04:01:32.530Z] #3 ← 200 OK: sfo1::xnvtm-1783569692308-72456ed6fa06 [750ms]
+> [debug] [2026-07-09T04:01:32.536Z] Fetching Environment Variables of prj_11288wlSM7g99uIdcsLO82nnmpSb and target undefined
+> [debug] [2026-07-09T04:01:32.538Z] #4 → GET https://api.vercel.com/v3/env/pull/prj_11288wlSM7g99uIdcsLO82nnmpSb?source=vercel-cli%3Adev&teamId=team_GFfYeNo99gh7U1NmQECL9CLB
+> [debug] [2026-07-09T04:01:32.817Z] #4 ← 200 OK: sfo1::lj7b4-1783569692636-0b56bd708694 [279ms]
+> [debug] [2026-07-09T04:01:32.826Z] VERCEL_OIDC_TOKEN expires in 43199s; refreshing in 42299s
+> [debug] [2026-07-09T04:01:32.833Z] Reading `package.json` file
+> [debug] [2026-07-09T04:01:32.834Z] Reading `vercel.json` file
+> [debug] [2026-07-09T04:01:33.044Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini
+> [debug] [2026-07-09T04:01:33.049Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.env.local
+> [debug] [2026-07-09T04:01:33.049Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.git
+> [debug] [2026-07-09T04:01:33.049Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.gitignore
+> [debug] [2026-07-09T04:01:33.049Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.vercel
+> [debug] [2026-07-09T04:01:33.049Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules
+> [debug] [2026-07-09T04:01:33.053Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini [9ms]
+> [debug] [2026-07-09T04:01:33.083Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini
+> [debug] [2026-07-09T04:01:33.084Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.env.local
+> [debug] [2026-07-09T04:01:33.084Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.git
+> [debug] [2026-07-09T04:01:33.084Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.gitignore
+> [debug] [2026-07-09T04:01:33.084Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.vercel
+> [debug] [2026-07-09T04:01:33.084Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules
+> [debug] [2026-07-09T04:01:33.085Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini [2ms]
+> [debug] [2026-07-09T04:01:33.497Z] Imported Builder "@vercel/node" from "/home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules/@vercel/node"
+> [debug] [2026-07-09T04:01:33.498Z] Resolved builders: "@vercel/node@latest => 5.8.22, @vercel/static => undefined"
+> [debug] [2026-07-09T04:01:33.507Z] Adding build match for "api/lancamentos/[id]" with "@vercel/node@latest"
+> [debug] [2026-07-09T04:01:33.507Z] Adding build match for "api/config" with "@vercel/node@latest"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "api/lancamentos" with "@vercel/node@latest"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for ".claude/FIX-LAZY-INIT-WEBSOCKET-2026-07.md" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for ".claude/IMPLEMENTACAO-2026-07.md" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for ".claude/SPEC.md" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for ".claude/settings.local.json" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for ".env.example" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "CLAUDE.md" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "index.html" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "manifest.json" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "scripts/migrate.js" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "supabase-setup.sql" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "sw.js" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "vercel-debug.log" with "@vercel/static"
+> [debug] [2026-07-09T04:01:33.508Z] Adding build match for "vercel.json" with "@vercel/static"
+> Ready! Available at http://localhost:3000
+> [debug] [2026-07-09T04:01:33.532Z] OIDC token refresh was aborted
+> [debug] [2026-07-09T04:01:34.035Z] Filesystem watcher notified of 1 events
+> [debug] [2026-07-09T04:01:34.037Z] File modified: vercel-debug.log
+> [debug] [2026-07-09T04:01:34.040Z] Reading `package.json` file
+> [debug] [2026-07-09T04:01:34.040Z] Reading `vercel.json` file
+> [debug] [2026-07-09T04:01:34.046Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini
+> [debug] [2026-07-09T04:01:34.048Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.env.local
+> [debug] [2026-07-09T04:01:34.048Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.git
+> [debug] [2026-07-09T04:01:34.048Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.gitignore
+> [debug] [2026-07-09T04:01:34.048Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.vercel
+> [debug] [2026-07-09T04:01:34.048Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules
+> [debug] [2026-07-09T04:01:34.052Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini [6ms]
+> [debug] [2026-07-09T04:01:34.058Z] Imported Builder "@vercel/node" from "/home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules/@vercel/node"
+> [debug] [2026-07-09T04:01:34.058Z] Resolved builders: "@vercel/node@latest => 5.8.22, @vercel/static => undefined"
+> [debug] [2026-07-09T04:01:34.339Z] Vercel CLI 54.21.1 (Node.js 20.20.2)
+
+> [debug] [2026-07-09T04:01:34.538Z] Filesystem watcher notified of 2 events
+> [debug] [2026-07-09T04:01:34.539Z] File modified: vercel-debug.log
+> [debug] [2026-07-09T04:01:34.539Z] File modified: vercel-debug.log
+> [debug] [2026-07-09T04:01:34.543Z] Reading `package.json` file
+> [debug] [2026-07-09T04:01:34.543Z] Reading `vercel.json` file
+> [debug] [2026-07-09T04:01:34.546Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini
+> [debug] [2026-07-09T04:01:34.548Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.env.local
+> [debug] [2026-07-09T04:01:34.548Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.git
+> [debug] [2026-07-09T04:01:34.548Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.gitignore
+> [debug] [2026-07-09T04:01:34.548Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.vercel
+> [debug] [2026-07-09T04:01:34.549Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules
+> [debug] [2026-07-09T04:01:34.553Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini [7ms]
+> [debug] [2026-07-09T04:01:34.564Z] Imported Builder "@vercel/node" from "/home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules/@vercel/node"
+> [debug] [2026-07-09T04:01:34.565Z] Resolved builders: "@vercel/node@latest => 5.8.22, @vercel/static => undefined"
+> [debug] [2026-07-09T04:01:35.040Z] Filesystem watcher notified of 1 events
+> [debug] [2026-07-09T04:01:35.041Z] File modified: vercel-debug.log
+> [debug] [2026-07-09T04:01:35.045Z] Reading `package.json` file
+> [debug] [2026-07-09T04:01:35.045Z] Reading `vercel.json` file
+> [debug] [2026-07-09T04:01:35.049Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini
+> [debug] [2026-07-09T04:01:35.050Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.env.local
+> [debug] [2026-07-09T04:01:35.050Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.git
+> [debug] [2026-07-09T04:01:35.050Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.gitignore
+> [debug] [2026-07-09T04:01:35.050Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.vercel
+> [debug] [2026-07-09T04:01:35.051Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules
+> [debug] [2026-07-09T04:01:35.054Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini [5ms]
+> [debug] [2026-07-09T04:01:35.059Z] Imported Builder "@vercel/node" from "/home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules/@vercel/node"
+> [debug] [2026-07-09T04:01:35.059Z] Resolved builders: "@vercel/node@latest => 5.8.22, @vercel/static => undefined"
+> [debug] [2026-07-09T04:01:35.180Z] Telemetry event tracked
+> [debug] [2026-07-09T04:01:35.522Z] Telemetry subprocess exited with code 0
+> [debug] [2026-07-09T04:01:35.543Z] Filesystem watcher notified of 3 events
+> [debug] [2026-07-09T04:01:35.544Z] File modified: vercel-debug.log
+> [debug] [2026-07-09T04:01:35.544Z] File modified: vercel-debug.log
+> [debug] [2026-07-09T04:01:35.545Z] File modified: vercel-debug.log
+> [debug] [2026-07-09T04:01:35.548Z] Reading `package.json` file
+> [debug] [2026-07-09T04:01:35.548Z] Reading `vercel.json` file
+> [debug] [2026-07-09T04:01:35.551Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini
+> [debug] [2026-07-09T04:01:35.552Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.env.local
+> [debug] [2026-07-09T04:01:35.552Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.git
+> [debug] [2026-07-09T04:01:35.552Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.gitignore
+> [debug] [2026-07-09T04:01:35.552Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/.vercel
+> [debug] [2026-07-09T04:01:35.552Z] Ignoring /home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules
+> [debug] [2026-07-09T04:01:35.554Z] Locating files /home/guilherme/Documentos/financas/controle-gastos-lazzarini [3ms]
+> [debug] [2026-07-09T04:01:35.558Z] Imported Builder "@vercel/node" from "/home/guilherme/Documentos/financas/controle-gastos-lazzarini/node_modules/@vercel/node"
+> [debug] [2026-07-09T04:01:35.558Z] Resolved builders: "@vercel/node@latest => 5.8.22, @vercel/static => undefined"
+> [debug] [2026-07-09T04:01:35.561Z] Telemetry subprocess killed due to timeout

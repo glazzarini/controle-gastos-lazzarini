@@ -690,12 +690,6 @@ body{
 <div class="toast" id="toast"></div>
 
 <script>
-// ── CONFIG ─────────────────────────────────────────────────────────────────
-const SHEET_ID  = '19I5LZsCvctD0d5ug7WnwbuOhTSbB0hUNw373zSEuHcc';
-const API_KEY   = 'AIzaSyADPwsG67nQxNn010Js3ua3xC3MZ9vZttM';
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyjWVAi8RFAOWii2IeHpFf8oFlbMhB3-Dp0tnwmuKz-9OG2ZwrmC37lbGnO6v87bDAu/exec';
-const BASE_URL  = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
-
 // ── STATE ──────────────────────────────────────────────────────────────────
 const MONTHS = [
   {label:'jun/26', date:new Date(2026,5,1)},
@@ -713,7 +707,7 @@ const MONTHS = [
   {label:'jun/27', date:new Date(2027,5,1)},
 ];
 
-const TETOS = {
+let TETOS = {
   'Alimentacao fora':        2000,
   'Mercado / Supermercado':  1800,
   'Farmacia / Saude':         800,
@@ -729,6 +723,17 @@ const TETOS = {
   'Presentes':                800,
   'Outros / Diversos':        500,
 };
+
+let CONTAS_FIXAS = [
+  { nome: 'Financiamento imóvel', valor: 7500, icone: '🏠' },
+  { nome: 'Escola (filha)',       valor: 2300, icone: '🏫' },
+  { nome: 'Convênio médico',      valor: 2000, icone: '🏥' },
+  { nome: 'Condomínio',           valor: 1600, icone: '🏢' },
+  { nome: 'Terapia',              valor: 510,  icone: '🧠' },
+  { nome: 'Claro',                valor: 281,  icone: '📱' },
+  { nome: 'Vivo',                 valor: 124,  icone: '📱' },
+  { nome: 'Seguro carro',         valor: 244,  icone: '🚗' },
+];
 
 const CAT_ICONS = {
   'Alimentacao fora':'🍽','Mercado / Supermercado':'🛒',
@@ -749,37 +754,12 @@ let config = {
   total_fixos: 14559,
 };
 
-// ── SHEETS API ─────────────────────────────────────────────────────────────
-async function sheetsGet(range) {
-  const url = `${BASE_URL}/values/${encodeURIComponent(range)}?key=${API_KEY}`;
-  const r = await fetch(url);
-  if (!r.ok) throw new Error('Erro ao ler planilha');
-  const d = await r.json();
-  return d.values || [];
-}
-
-async function scriptPost(payload) {
-  // Call our Vercel proxy — server-to-server, no CORS issues
-  const r = await fetch('/api/sheets', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify(payload),
-  });
-  if (!r.ok) throw new Error('Erro ao comunicar com a planilha');
-  return r.json();
-}
-
-async function sheetsAppend(range, values) {
-  const row = values[0];
-  await scriptPost({
-    data:            row[0],
-    descricao:       row[1],
-    categoria:       row[2],
-    valor:           row[3],
-    estabelecimento: row[4],
-    tipo:            row[5],
-    obs:             row[6] || ''
-  });
+// ── API ────────────────────────────────────────────────────────────────────
+async function apiFetch(url, options) {
+  const r = await fetch(url, options);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.error || 'Erro na requisição');
+  return body;
 }
 
 // ── INIT ───────────────────────────────────────────────────────────────────
@@ -797,34 +777,31 @@ function setTodayDate() {
 
 async function loadData() {
   try {
-    // Try to load config sheet
-    try {
-      const cfg = await sheetsGet('config!A:B');
-      cfg.forEach(([k,v]) => { if(k && v) config[k] = isNaN(v) ? v : Number(v); });
-    } catch(e) { /* use defaults */ }
+    const cfg = await apiFetch('/api/config');
+    config.renda_guilherme = cfg.renda_guilherme;
+    config.renda_esposa    = cfg.renda_esposa;
+    config.meta_fatura     = cfg.meta_fatura;
+    config.total_fixos     = cfg.total_fixos;
+    if (cfg.tetos && Object.keys(cfg.tetos).length) TETOS = cfg.tetos;
+    if (cfg.contas_fixas && cfg.contas_fixas.length) CONTAS_FIXAS = cfg.contas_fixas;
+  } catch(e) { console.error(e); /* mantém defaults locais */ }
 
-    // Load lancamentos
-    const rows = await sheetsGet('lancamentos!A:G');
-    allLancamentos = [];
-    for (let i = 1; i < rows.length; i++) {
-      const [data,descricao,categoria,valor,estabelecimento,tipo,obs] = rows[i];
-      if (!data || !valor) continue;
-      allLancamentos.push({
-        data: parseDate(data),
-        descricao: descricao || '',
-        categoria: categoria || '',
-        valor: parseFloat(String(valor).replace(',','.')),
-        estabelecimento: estabelecimento || '',
-        tipo: tipo || 'A vista',
-        obs: obs || '',
-        raw: data,
-      });
-    }
+  try {
+    const rows = await apiFetch('/api/lancamentos');
+    allLancamentos = rows.map(item => ({
+      id: item.id,
+      data: parseDate(item.data),
+      descricao: item.descricao || '',
+      categoria: item.categoria || '',
+      valor: parseFloat(item.valor),
+      observacao: item.observacao || '',
+      tipo: item.tipo || 'A vista',
+      raw: item.data,
+    }));
     allLancamentos.sort((a,b) => b.data - a.data);
     allLancamentos.forEach((item, i) => item._idx = i);
   } catch(e) {
     console.error(e);
-    // Use empty data if sheets not set up yet
     allLancamentos = [];
   }
 }
@@ -948,7 +925,7 @@ function renderLancItemClickable(l) {
     <div class="lanc-icon">${icon}</div>
     <div class="lanc-info">
       <div class="lanc-desc">${l.descricao || l.categoria}</div>
-      <div class="lanc-cat">${l.categoria}${l.estabelecimento ? ' · '+l.estabelecimento : ''}</div>
+      <div class="lanc-cat">${l.categoria}${l.observacao ? ' · '+l.observacao : ''}</div>
     </div>
     <div class="lanc-right">
       <div class="lanc-value" style="color:${color}">-${formatMoney(l.valor)}</div>
@@ -987,9 +964,9 @@ function openDetalhe(idx) {
         <span class="detail-row-label">💳 Tipo</span>
         <span class="detail-row-value">${l.tipo || 'A vista'}</span>
       </div>
-      ${l.estabelecimento ? `<div class="detail-row">
+      ${l.observacao ? `<div class="detail-row">
         <span class="detail-row-label">📝 Observação</span>
-        <span class="detail-row-value">${l.estabelecimento}</span>
+        <span class="detail-row-value">${l.observacao}</span>
       </div>` : ''}
 
     </div>
@@ -1024,7 +1001,7 @@ function openEditModal(idx) {
   document.getElementById('edit-categoria').value  = l.categoria || '';
   document.getElementById('edit-valor').value      = l.valor;
   document.getElementById('edit-tipo').value       = l.tipo || 'A vista';
-  document.getElementById('edit-obs').value        = l.estabelecimento || '';
+  document.getElementById('edit-obs').value        = l.observacao || '';
   // Convert date to YYYY-MM-DD for input
   const d = l.data;
   const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -1053,41 +1030,27 @@ async function saveEdit() {
 
   const [y,m,d] = newDataRaw.split('-');
   const newDataFmt = `${d}/${m}/${y}`;
-  const newDate = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+  const newObs = document.getElementById('edit-obs').value.trim();
 
   const btn = document.querySelector('.edit-save-btn');
   btn.disabled = true; btn.textContent = 'Salvando...';
 
   try {
-    // Delete old + insert new
-    await scriptPost({
-      action: 'delete',
-      data: l.raw, descricao: l.descricao,
-      categoria: l.categoria, valor: l.valor,
-      estabelecimento: l.estabelecimento, tipo: l.tipo,
-    });
-    const newObs = document.getElementById('edit-obs').value.trim();
-    await scriptPost({
-      data: newDataFmt, descricao: newDesc,
-      categoria: newCat, valor: newValor,
-      estabelecimento: newObs, tipo: newTipo, obs: ''
+    await apiFetch(`/api/lancamentos/${l.id}`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        data: newDataFmt, descricao: newDesc,
+        categoria: newCat, valor: newValor,
+        observacao: newObs, tipo: newTipo,
+      }),
     });
 
-    // Update local state
-    allLancamentos[editingIdx] = {
-      ...l,
-      data: newDate, raw: newDataFmt,
-      descricao: newDesc, categoria: newCat,
-      valor: newValor, tipo: newTipo,
-      estabelecimento: newObs,
-    };
-    allLancamentos.sort((a,b) => b.data - a.data);
-    allLancamentos.forEach((item,i) => item._idx = i);
-
+    await loadData();
     closeEditModal();
     showToast('Lançamento atualizado ✓', 'success');
     // Refresh detalhe screen with new idx
-    const newIdx = allLancamentos.findIndex(x => x.raw === newDataFmt && x.descricao === newDesc && x.valor === newValor);
+    const newIdx = allLancamentos.findIndex(x => x.id === l.id);
     if (newIdx >= 0) openDetalhe(newIdx);
     renderPainel();
   } catch(e) {
@@ -1121,7 +1084,7 @@ function renderLancItem(l, showDelete=false) {
     <div class="lanc-icon">${icon}</div>
     <div class="lanc-info">
       <div class="lanc-desc">${l.descricao || l.categoria}</div>
-      <div class="lanc-cat">${l.categoria}${l.estabelecimento ? ' · '+l.estabelecimento : ''}</div>
+      <div class="lanc-cat">${l.categoria}${l.observacao ? ' · '+l.observacao : ''}</div>
     </div>
     <div class="lanc-right">
       <div class="lanc-value" style="color:${color}">-${formatMoney(l.valor)}</div>
@@ -1224,14 +1187,7 @@ function renderOrcamento() {
 
     <div class="card">
       <div class="card-title">Contas fixas</div>
-      <div class="orc-row"><div class="orc-label">🏠 Financiamento imóvel</div><div class="orc-value">R$ 7.500</div></div>
-      <div class="orc-row"><div class="orc-label">🏫 Escola (filha)</div><div class="orc-value">R$ 2.300</div></div>
-      <div class="orc-row"><div class="orc-label">🏥 Convênio médico</div><div class="orc-value">R$ 2.000</div></div>
-      <div class="orc-row"><div class="orc-label">🏢 Condomínio</div><div class="orc-value">R$ 1.600</div></div>
-      <div class="orc-row"><div class="orc-label">🧠 Terapia</div><div class="orc-value">R$ 510</div></div>
-      <div class="orc-row"><div class="orc-label">📱 Claro</div><div class="orc-value">R$ 281</div></div>
-      <div class="orc-row"><div class="orc-label">📱 Vivo</div><div class="orc-value">R$ 124</div></div>
-      <div class="orc-row"><div class="orc-label">🚗 Seguro carro</div><div class="orc-value">R$ 244</div></div>
+      ${CONTAS_FIXAS.map(c => `<div class="orc-row"><div class="orc-label">${c.icone || '💰'} ${c.nome}</div><div class="orc-value">${formatMoney(c.valor)}</div></div>`).join('')}
       <div class="orc-row total">
         <div class="orc-label">Total fixos</div>
         <div class="orc-value">${formatMoney(fixos)}</div>
@@ -1364,42 +1320,24 @@ async function salvarLancamento() {
 
   const btn = document.getElementById('btn-salvar');
   btn.disabled = true;
+  btn.textContent = 'Salvando...';
 
   try {
     const [y,m,d] = data.split('-');
-    const valorParcela = nParcelas > 1 ? parseFloat((valor / nParcelas).toFixed(2)) : valor;
+    const dataFmt = `${d}/${m}/${y}`;
 
-    for (let i = 0; i < nParcelas; i++) {
-      const dt = new Date(parseInt(y), parseInt(m)-1 + i, parseInt(d));
-      const dy = String(dt.getDate()).padStart(2,'0');
-      const dm = String(dt.getMonth()+1).padStart(2,'0');
-      const dyr = dt.getFullYear();
-      const dataFmt = `${dy}/${dm}/${dyr}`;
-      const descParc = nParcelas > 1 ? `${descricao} (${i+1}/${nParcelas})` : descricao;
+    const result = await apiFetch('/api/lancamentos', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        data: dataFmt, descricao, categoria, valor,
+        observacao: estab, tipo, parcelas: nParcelas,
+      }),
+    });
 
-      btn.textContent = nParcelas > 1 ? `Salvando ${i+1}/${nParcelas}...` : 'Salvando...';
+    await loadData();
 
-      await sheetsAppend('lancamentos!A:G', [[dataFmt, descParc, categoria, valorParcela, estab, tipo, '']]);
-
-      allLancamentos.unshift({
-        data: dt,
-        descricao: descParc,
-        categoria,
-        valor: valorParcela,
-        estabelecimento: estab,
-        tipo,
-        obs: '',
-        raw: dataFmt,
-        _idx: 0,
-      });
-    }
-
-    // Re-index
-    allLancamentos.sort((a,b) => b.data - a.data);
-    allLancamentos.forEach((item, i) => item._idx = i);
-    allLancamentos.forEach((item, i) => item._idx = i);
-
-    const msg = nParcelas > 1 ? `${nParcelas} parcelas salvas! ✓` : 'Lançamento salvo! ✓';
+    const msg = result.inserted > 1 ? `${result.inserted} parcelas salvas! ✓` : 'Lançamento salvo! ✓';
     showToast(msg, 'success');
 
     // Reset form
@@ -1543,19 +1481,8 @@ async function deleteLanc(idx) {
   if (!l) return;
   showToast('Excluindo...', 'success');
   try {
-    // Find and delete row in sheet via Apps Script
-    await scriptPost({
-      action: 'delete',
-      data:        l.raw,
-      descricao:   l.descricao,
-      categoria:   l.categoria,
-      valor:       l.valor,
-      estabelecimento: l.estabelecimento,
-      tipo:        l.tipo,
-    });
-    allLancamentos.splice(idx, 1);
-    // Re-index
-    allLancamentos.forEach((item, i) => item._idx = i);
+    await apiFetch(`/api/lancamentos/${l.id}`, { method: 'DELETE' });
+    await loadData();
     showToast('Lançamento excluído ✓', 'success');
     // If on detalhe screen, go back to lancamentos
     const activeScreen = document.querySelector('.screen.active');
@@ -1566,7 +1493,7 @@ async function deleteLanc(idx) {
     }
     renderPainel();
   } catch(e) {
-    showToast('Erro ao excluir', 'error');
+    showToast('Erro ao excluir: ' + e.message, 'error');
   }
 }
 
@@ -1587,26 +1514,15 @@ async function clearMonth(m) {
   showToast('Excluindo...', 'success');
   try {
     const lancs = getLancamentosDoMes(m);
-    // Delete all via Apps Script
     for (const l of lancs) {
-      await scriptPost({
-        action: 'delete',
-        data: l.raw, descricao: l.descricao,
-        categoria: l.categoria, valor: l.valor,
-        estabelecimento: l.estabelecimento, tipo: l.tipo,
-      });
+      await apiFetch(`/api/lancamentos/${l.id}`, { method: 'DELETE' });
     }
-    // Remove from local state
-    allLancamentos = allLancamentos.filter(l => {
-      return !(l.data.getMonth() === m.date.getMonth() &&
-               l.data.getFullYear() === m.date.getFullYear());
-    });
-    allLancamentos.forEach((item, i) => item._idx = i);
+    await loadData();
     showToast(`${m.label} limpo ✓`, 'success');
     renderHistorico();
     renderPainel();
   } catch(e) {
-    showToast('Erro ao limpar mês', 'error');
+    showToast('Erro ao limpar mês: ' + e.message, 'error');
   }
 }
 
