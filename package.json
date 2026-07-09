@@ -1,0 +1,16 @@
+{
+  "name": "controle-gastos",
+  "version": "1.0.0",
+  "description": "PWA de controle de gastos — Lazzarini",
+  "type": "module",
+  "scripts": {
+    "deploy": "vercel --prod",
+    "migrate": "node scripts/migrate.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "vercel": "^37.0.0"
+  }
+}
