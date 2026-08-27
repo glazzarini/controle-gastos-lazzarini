@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "deploy": "vercel --prod",
-    "migrate": "node scripts/migrate.js"
+    "migrate": "node scripts/migrate.js",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "ws": "^8.21.0"
   },
   "devDependencies": {
-    "vercel": "^54.21.1"
+    "vercel": "^54.21.1",
+    "vitest": "^3.0.0",
+    "@vitest/coverage-v8": "^3.0.0"
   }
 }
