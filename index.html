@@ -339,6 +339,25 @@ body{
 }
 .clear-month-btn:hover{background:rgba(239,68,68,.15)}
 
+/* ── ORC ROW ACTIONS (editar/excluir categorias, contas fixas, renda) ──────── */
+.orc-row-actions{display:flex;align-items:center;gap:2px;flex-shrink:0}
+.orc-action-btn{
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  padding:5px;border-radius:8px;transition:all .15s;
+  display:flex;align-items:center;justify-content:center;
+}
+.orc-action-btn:hover{color:var(--accent);background:rgba(79,142,247,.1)}
+.orc-action-btn.danger:hover{color:var(--red);background:rgba(239,68,68,.1)}
+.orc-action-btn svg{width:14px;height:14px;stroke-width:1.8}
+.add-row-btn{
+  width:100%;margin-top:10px;padding:9px;
+  background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.25);
+  border-radius:10px;color:var(--accent);
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;
+  cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.add-row-btn:hover{background:rgba(79,142,247,.15)}
+
 /* ── PARCEL FIELD ────────────────────────────────────────────────────────── */
 .parcel-info{
   background:rgba(79,142,247,.08);border:1px solid rgba(79,142,247,.2);
@@ -501,20 +520,6 @@ body{
         <label class="form-label">Categoria</label>
         <select class="form-select" id="f-categoria">
           <option value="">Selecione...</option>
-          <option>Alimentacao fora</option>
-          <option>Mercado / Supermercado</option>
-          <option>Farmacia / Saude</option>
-          <option>Veiculos / Transporte</option>
-          <option>Viagem / Lazer</option>
-          <option>Vestuario / Moda</option>
-          <option>Mercado Livre</option>
-          <option>Streaming / Assinaturas</option>
-          <option>Educacao / Infanto</option>
-          <option>Pet</option>
-          <option>Decoracao Casa</option>
-          <option>Guitarra</option>
-          <option>Presentes</option>
-          <option>Outros / Diversos</option>
         </select>
       </div>
 
@@ -629,22 +634,7 @@ body{
     </div>
     <div class="form-group">
       <label class="form-label">Categoria</label>
-      <select class="form-select" id="edit-categoria">
-        <option>Alimentacao fora</option>
-        <option>Mercado / Supermercado</option>
-        <option>Farmacia / Saude</option>
-        <option>Veiculos / Transporte</option>
-        <option>Viagem / Lazer</option>
-        <option>Vestuario / Moda</option>
-        <option>Mercado Livre</option>
-        <option>Streaming / Assinaturas</option>
-        <option>Educacao / Infanto</option>
-        <option>Pet</option>
-        <option>Decoracao Casa</option>
-        <option>Guitarra</option>
-        <option>Presentes</option>
-        <option>Outros / Diversos</option>
-      </select>
+      <select class="form-select" id="edit-categoria"></select>
     </div>
     <div class="form-group">
       <label class="form-label">Valor</label>
@@ -683,6 +673,22 @@ body{
       <button class="confirm-cancel" onclick="closeConfirm()">Cancelar</button>
       <button class="confirm-ok" id="confirm-ok-btn">Confirmar</button>
     </div>
+  </div>
+</div>
+
+<!-- FORM MODAL (renda / conta fixa / categoria) -->
+<div class="edit-modal-overlay" id="form-modal" onclick="closeFormModal(event)">
+  <div class="edit-modal-sheet">
+    <div class="edit-modal-title" id="form-modal-title">Editar</div>
+    <div class="form-group" id="form-modal-group-1">
+      <label class="form-label" id="form-modal-label-1"></label>
+      <input class="form-input" id="form-modal-input-1" type="text">
+    </div>
+    <div class="form-group" id="form-modal-group-2">
+      <label class="form-label" id="form-modal-label-2"></label>
+      <input class="form-input" id="form-modal-input-2" type="text">
+    </div>
+    <button class="edit-save-btn" onclick="formModalSave()">Salvar</button>
   </div>
 </div>
 
@@ -745,6 +751,8 @@ const CAT_ICONS = {
   'Presentes':'🎁','Outros / Diversos':'🎯',
 };
 
+let CATEGORIAS = []; // [{id, nome, teto}] — usado na tela de Orçamento (CRUD)
+
 let currentMonth = MONTHS[0];
 let allLancamentos = [];
 let config = {
@@ -784,7 +792,12 @@ async function loadData() {
     config.total_fixos     = cfg.total_fixos;
     if (cfg.tetos && Object.keys(cfg.tetos).length) TETOS = cfg.tetos;
     if (cfg.contas_fixas && cfg.contas_fixas.length) CONTAS_FIXAS = cfg.contas_fixas;
+    populateCategoriaSelects();
   } catch(e) { console.error(e); /* mantém defaults locais */ }
+
+  try {
+    CATEGORIAS = await apiFetch('/api/categorias');
+  } catch(e) { console.error(e); /* mantém CATEGORIAS vazio, tela de orçamento mostra vazio */ }
 
   try {
     const rows = await apiFetch('/api/lancamentos');
@@ -804,6 +817,23 @@ async function loadData() {
     console.error(e);
     allLancamentos = [];
   }
+}
+
+// Preenche os <select> de categoria (Lançar + Modal de Edição) a partir de TETOS,
+// que já vem dinâmico de GET /api/config (tabela categorias).
+function populateCategoriaSelects() {
+  const nomes = Object.keys(TETOS).sort((a,b) => a.localeCompare(b));
+  const optionsHtml = nomes.map(n => `<option>${n}</option>`).join('');
+
+  const fSel = document.getElementById('f-categoria');
+  const valorAtualF = fSel.value;
+  fSel.innerHTML = `<option value="">Selecione...</option>${optionsHtml}`;
+  if (nomes.includes(valorAtualF)) fSel.value = valorAtualF;
+
+  const editSel = document.getElementById('edit-categoria');
+  const valorAtualEdit = editSel.value;
+  editSel.innerHTML = optionsHtml;
+  if (nomes.includes(valorAtualEdit)) editSel.value = valorAtualEdit;
 }
 
 function parseDate(str) {
@@ -1170,7 +1200,10 @@ function renderOrcamento() {
     </div>
 
     <div class="card">
-      <div class="card-title">Renda</div>
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        Renda
+        <button class="orc-action-btn" onclick="openEditRenda()" title="Editar renda">${editIconSvg()}</button>
+      </div>
       <div class="orc-row">
         <div class="orc-label">💼 Guilherme (PJ líquido)</div>
         <div class="orc-value" style="color:var(--accent)">${formatMoney(config.renda_guilherme||20000)}</div>
@@ -1187,11 +1220,32 @@ function renderOrcamento() {
 
     <div class="card">
       <div class="card-title">Contas fixas</div>
-      ${CONTAS_FIXAS.map(c => `<div class="orc-row"><div class="orc-label">${c.icone || '💰'} ${c.nome}</div><div class="orc-value">${formatMoney(c.valor)}</div></div>`).join('')}
+      ${CONTAS_FIXAS.map(c => `<div class="orc-row">
+        <div class="orc-label">${c.icone || '💰'} ${c.nome}</div>
+        <div class="orc-row-actions">
+          <div class="orc-value">${formatMoney(c.valor)}</div>
+          ${c.id ? `<button class="orc-action-btn" onclick="openContaFixaModal('${c.id}')" title="Editar">${editIconSvg()}</button>
+          <button class="orc-action-btn danger" onclick="confirmDeleteContaFixa('${c.id}')" title="Excluir">${deleteIconSvg()}</button>` : ''}
+        </div>
+      </div>`).join('')}
       <div class="orc-row total">
         <div class="orc-label">Total fixos</div>
         <div class="orc-value">${formatMoney(fixos)}</div>
       </div>
+      <button class="add-row-btn" onclick="openContaFixaModal(null)">+ Adicionar conta fixa</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Categorias e tetos</div>
+      ${CATEGORIAS.map(c => `<div class="orc-row">
+        <div class="orc-label">${CAT_ICONS[c.nome] || '💳'} ${c.nome}</div>
+        <div class="orc-row-actions">
+          <div class="orc-value">${formatMoney(c.teto)}</div>
+          <button class="orc-action-btn" onclick="openCategoriaModal('${c.id}')" title="Editar">${editIconSvg()}</button>
+          <button class="orc-action-btn danger" onclick="confirmDeleteCategoria('${c.id}')" title="Excluir">${deleteIconSvg()}</button>
+        </div>
+      </div>`).join('')}
+      <button class="add-row-btn" onclick="openCategoriaModal(null)">+ Adicionar categoria</button>
     </div>
 
     <div class="card">
@@ -1209,6 +1263,176 @@ function renderOrcamento() {
     </div>`;
 
   document.getElementById('orcamento-content').innerHTML = html;
+}
+
+function editIconSvg() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 3a2.85 2.83 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>`;
+}
+function deleteIconSvg() {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>`;
+}
+
+// ── FORM MODAL (renda / conta fixa / categoria) ────────────────────────────
+let formModalOnSave = null;
+
+function openFormModal(title, fields, onSave) {
+  document.getElementById('form-modal-title').textContent = title;
+  fields.forEach((f, i) => {
+    const idx = i + 1;
+    const group = document.getElementById(`form-modal-group-${idx}`);
+    const label = document.getElementById(`form-modal-label-${idx}`);
+    const input = document.getElementById(`form-modal-input-${idx}`);
+    group.style.display = '';
+    label.textContent = f.label;
+    input.type = f.type === 'money' ? 'number' : 'text';
+    input.step = f.type === 'money' ? '0.01' : '';
+    input.min = f.type === 'money' ? '0' : '';
+    input.value = f.value === undefined || f.value === null ? '' : f.value;
+    input.dataset.key = f.key;
+  });
+  for (let i = fields.length + 1; i <= 2; i++) {
+    document.getElementById(`form-modal-group-${i}`).style.display = 'none';
+  }
+  formModalOnSave = onSave;
+  document.getElementById('form-modal').classList.add('open');
+}
+
+function closeFormModal(e) {
+  if (!e || e.target === document.getElementById('form-modal')) {
+    document.getElementById('form-modal').classList.remove('open');
+    formModalOnSave = null;
+  }
+}
+
+async function formModalSave() {
+  if (!formModalOnSave) return;
+  const values = {};
+  for (let i = 1; i <= 2; i++) {
+    const group = document.getElementById(`form-modal-group-${i}`);
+    if (group.style.display === 'none') continue;
+    const input = document.getElementById(`form-modal-input-${i}`);
+    values[input.dataset.key] = input.value;
+  }
+  const btn = document.querySelector('#form-modal .edit-save-btn');
+  btn.disabled = true; btn.textContent = 'Salvando...';
+  try {
+    await formModalOnSave(values);
+    closeFormModal();
+  } catch (e) {
+    showToast('Erro: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Salvar';
+  }
+}
+
+// ── EDITAR RENDA ────────────────────────────────────────────────────────────
+function openEditRenda() {
+  openFormModal('Editar renda', [
+    { key: 'renda_guilherme', label: 'Guilherme (PJ líquido)', type: 'money', value: config.renda_guilherme },
+    { key: 'renda_esposa',    label: 'Esposa (PJ líquido)',    type: 'money', value: config.renda_esposa },
+  ], async (v) => {
+    const rg = parseFloat(v.renda_guilherme);
+    const re = parseFloat(v.renda_esposa);
+    if (isNaN(rg) || rg < 0 || isNaN(re) || re < 0) throw new Error('Informe valores válidos');
+    await apiFetch('/api/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ renda_guilherme: rg, renda_esposa: re }),
+    });
+    await loadData();
+    renderOrcamento();
+    showToast('Renda atualizada ✓', 'success');
+  });
+}
+
+// ── CRUD CONTAS FIXAS ───────────────────────────────────────────────────────
+function openContaFixaModal(id) {
+  const cf = id ? CONTAS_FIXAS.find(c => c.id === id) : null;
+  openFormModal(cf ? 'Editar conta fixa' : 'Nova conta fixa', [
+    { key: 'nome',  label: 'Nome',  type: 'text',  value: cf ? cf.nome : '' },
+    { key: 'valor', label: 'Valor', type: 'money', value: cf ? cf.valor : '' },
+  ], async (v) => {
+    const nome = (v.nome || '').trim();
+    const valor = parseFloat(v.valor);
+    if (!nome) throw new Error('Informe o nome');
+    if (isNaN(valor) || valor < 0) throw new Error('Valor inválido');
+    if (cf) {
+      await apiFetch(`/api/contas-fixas/${cf.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, valor }),
+      });
+    } else {
+      await apiFetch('/api/contas-fixas', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, valor }),
+      });
+    }
+    await loadData();
+    renderOrcamento();
+    showToast(cf ? 'Conta fixa atualizada ✓' : 'Conta fixa criada ✓', 'success');
+  });
+}
+
+function confirmDeleteContaFixa(id) {
+  const cf = CONTAS_FIXAS.find(c => c.id === id);
+  if (!cf) return;
+  showConfirm('Excluir conta fixa', `Excluir "${cf.nome}"?`, async () => {
+    try {
+      await apiFetch(`/api/contas-fixas/${id}`, { method: 'DELETE' });
+      await loadData();
+      renderOrcamento();
+      showToast('Conta fixa excluída ✓', 'success');
+    } catch (e) {
+      showToast('Erro ao excluir: ' + e.message, 'error');
+    }
+  });
+}
+
+// ── CRUD CATEGORIAS / TETOS ─────────────────────────────────────────────────
+function openCategoriaModal(id) {
+  const cat = id ? CATEGORIAS.find(c => c.id === id) : null;
+  openFormModal(cat ? 'Editar categoria' : 'Nova categoria', [
+    { key: 'nome', label: 'Nome',          type: 'text',  value: cat ? cat.nome : '' },
+    { key: 'teto', label: 'Teto mensal',   type: 'money', value: cat ? cat.teto : '' },
+  ], async (v) => {
+    const nome = (v.nome || '').trim();
+    const teto = parseFloat(v.teto);
+    if (!nome) throw new Error('Informe o nome');
+    if (isNaN(teto) || teto < 0) throw new Error('Teto inválido');
+    let msg = cat ? 'Categoria atualizada ✓' : 'Categoria criada ✓';
+    if (cat) {
+      const result = await apiFetch(`/api/categorias/${cat.id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, teto }),
+      });
+      if (result.lancamentos_atualizados > 0) {
+        msg = `Categoria renomeada — ${result.lancamentos_atualizados} lançamento(s) do histórico atualizado(s) ✓`;
+      }
+    } else {
+      await apiFetch('/api/categorias', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome, teto }),
+      });
+    }
+    await loadData();
+    renderOrcamento();
+    showToast(msg, 'success');
+  });
+}
+
+function confirmDeleteCategoria(id) {
+  const cat = CATEGORIAS.find(c => c.id === id);
+  if (!cat) return;
+  showConfirm('Excluir categoria', `Excluir "${cat.nome}"?`, async () => {
+    try {
+      await apiFetch(`/api/categorias/${id}`, { method: 'DELETE' });
+      await loadData();
+      renderOrcamento();
+      showToast('Categoria excluída ✓', 'success');
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  });
 }
 
 // ── RENDER HISTORICO ──────────────────────────────────────────────────────

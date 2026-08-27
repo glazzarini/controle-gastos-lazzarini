@@ -17,9 +17,9 @@ function setCors(res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
-// Converte DD/MM/YYYY → YYYY-MM-DD para o Postgres
+// Converte DD/MM/YYYY → YYYY-MM-DD para o Postgres.
+// Só é chamada quando dataBR é truthy (ver `if (dataBR) updates.data = toIso(dataBR)` abaixo).
 function toIso(dateBR) {
-  if (!dateBR) return null;
   if (dateBR.includes('-')) return dateBR; // já é ISO
   const [d, m, y] = dateBR.split('/');
   return `${y}-${m}-${d}`;
