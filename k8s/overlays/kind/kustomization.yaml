@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Ajustes do Kind: imagens locais carregadas com `kind load docker-image` (sem registry).
+namespace: controle-gastos
+resources:
+  - ../../base
+  # Banco local (dados fictícios) — só no Kind
+  - postgres/postgres.yaml
+images:
+  - name: controle-gastos-backend
+    newTag: local
+  - name: controle-gastos-frontend
+    newTag: local
+patches:
+  - target: { kind: Deployment, name: "backend|frontend" }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent
