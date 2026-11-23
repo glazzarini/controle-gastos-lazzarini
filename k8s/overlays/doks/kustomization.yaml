@@ -1,0 +1,60 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# DOKS (DigitalOcean): só o backend roda no cluster. O frontend fica no Vercel,
+# que repassa /api/* para o IP do Load Balancer (rewrite no vercel.json).
+#
+# Pré-requisitos no cluster (uma vez):
+#   kubectl create namespace controle-gastos
+#   kubectl -n controle-gastos create secret generic controle-gastos-db --from-literal=connection-string='...'
+#   kubectl -n controle-gastos create secret docker-registry ghcr-pull \
+#     --docker-server=ghcr.io --docker-username=glazzarini --docker-password=<PAT read:packages>
+#
+# Deploy (a cada versão):
+#   docker build -t ghcr.io/glazzarini/controle-gastos-backend:<tag> backend/
+#   docker push ghcr.io/glazzarini/controle-gastos-backend:<tag>
+#   atualizar newTag abaixo → kubectl apply -k k8s/overlays/doks
+#   IP público: kubectl -n controle-gastos get svc backend (EXTERNAL-IP)
+namespace: controle-gastos
+resources:
+  - ../../base
+images:
+  - name: controle-gastos-backend
+    newName: ghcr.io/glazzarini/controle-gastos-backend
+    newTag: "v1.0.0"
+patches:
+  # Frontend e Ingress não sobem no DOKS
+  - patch: |-
+      $patch: delete
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: frontend
+  - patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: frontend
+  - patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: controle-gastos
+  # Backend exposto direto por um Load Balancer da DO (IP público, HTTP na porta 80)
+  - target: { kind: Service, name: backend }
+    patch: |-
+      - op: replace
+        path: /spec/type
+        value: LoadBalancer
+      - op: add
+        path: /metadata/annotations
+        value:
+          service.beta.kubernetes.io/do-loadbalancer-name: controle-gastos
+  # Credencial para baixar a imagem do GHCR
+  - target: { kind: Deployment, name: backend }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/imagePullSecrets
+        value:
+          - name: ghcr-pull
